@@ -16,7 +16,7 @@ for arg in "$@"; do
     fi
 done
 
-# Step 1: 打印 USB_PORTS 映射，同时检测是否存在重复目标名
+# Step 1: USB_PORTS 매핑을 출력하고 동시에 중복 대상 이름이 있는지 검사
 echo "🔧 Checking USB_PORTS configuration:"
 declare -A TARGET_NAMES_COUNT
 LINE_NUM=0
@@ -26,7 +26,7 @@ for k in "${!USB_PORTS[@]}"; do
     LINE_NUM=$((LINE_NUM + 1))
     IFS=':' read -r name bitrate <<< "${USB_PORTS[$k]}"
     
-    # 检查是否重复
+    # 중복 여부 검사
     if [[ -n "${TARGET_NAMES_COUNT[$name]}" ]]; then
         echo "→ [$LINE_NUM] \"$k\"=\"${USB_PORTS[$k]}\"  ❌ Duplicate target CAN name: '$name'"
         HAS_DUPLICATE=true

@@ -198,7 +198,7 @@ class PiperRosNode(Node):
         self.joint_states_feedback.velocity = [vel_0, vel_1, vel_2, vel_3, vel_4, vel_5]
         self.joint_states_feedback.effort = [effort_0, effort_1, effort_2, effort_3, effort_4, effort_5, effort_6]
         self.joint_states_feedback.header.stamp = self.joint_states.header.stamp
-        # 发布所有消息
+        # 모든 메시지 발행
         if any(abs(pos) > 3.5 for pos in self.joint_states_feedback.position):
             self.get_logger().warn("Joint state abnormal: value exceeds ±3.5 rad")
         else:
@@ -241,7 +241,7 @@ class PiperRosNode(Node):
         endpos.orientation.z = quaternion[2]
         endpos.orientation.w = quaternion[3]
         self.end_pose_pub.publish(endpos)
-        #  时间戳的endpose
+        # 타임스탬프가 포함된 endpose
         end_pos_stamp = PoseStamped()
         end_pos_stamp.pose = endpos
         end_pos_stamp.header.stamp = self.float_to_ros_time(new_time)
@@ -291,22 +291,22 @@ class PiperRosNode(Node):
         factor = 57324.840764  # 1000*180/3.14
         # self.get_logger().info(f"Received Joint States:")
 
-        # 创建一个字典来存储关节名称与位置的映射
+        # 관절 이름과 위치의 매핑을 저장할 딕셔너리 생성
         joint_positions = {}
         joint_6 = 0
 
-        # 遍历joint_data.name来映射位置
+        # joint_data.name을 순회하며 위치 매핑
         for idx, joint_name in enumerate(joint_data.name):
             self.get_logger().info(f"{joint_name}: {joint_data.position[idx]}")
             joint_positions[joint_name] = round(joint_data.position[idx] * factor)
-        
-        # 获取第7个关节的位置
+
+        # 7번째 관절의 위치 가져오기
         if len(joint_data.position) >= 7:
             # self.get_logger().info(f"joint_7: {joint_data.position[6]}")
             joint_6 = round(joint_data.position[6] * 1000 * 1000)
             joint_6 = joint_6 * self.gripper_val_mutiple
 
-        # 控制电机速度
+        # 모터 속도 제어
         if self.GetEnableFlag():
             if joint_data.velocity != []:
                 all_zeros = all(v == 0 for v in joint_data.velocity)
@@ -323,7 +323,7 @@ class PiperRosNode(Node):
             else:
                 self.piper.MotionCtrl_2(0x01, 0x01, 100)
 
-            # 使用关节名称来动态控制关节
+            # 관절 이름을 사용해 관절을 동적으로 제어
             self.piper.JointCtrl(
                 joint_positions.get('joint1', 0),
                 joint_positions.get('joint2', 0),
@@ -333,7 +333,7 @@ class PiperRosNode(Node):
                 joint_positions.get('joint6', 0)
             )
 
-            # 夹爪控制
+            # 그리퍼 제어
             if self.gripper_exist:
                 if len(joint_data.effort) >= 7:
                     gripper_effort = clip(joint_data.effort[6], 0.5, 3)
@@ -342,7 +342,7 @@ class PiperRosNode(Node):
                         gripper_effort = round(gripper_effort * 1000)
                     else:
                         # self.get_logger().warning("Gripper effort is NaN, using default value.")
-                        gripper_effort = 1000  # 设置默认值
+                        gripper_effort = 1000  # 기본값 설정
                     self.piper.GripperCtrl(abs(joint_6), gripper_effort, 0x01, 0)
                 else:
                     self.piper.GripperCtrl(abs(joint_6), 1000, 0x01, 0)

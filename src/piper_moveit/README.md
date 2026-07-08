@@ -8,38 +8,38 @@
 |---|---|
 |![humble](https://img.shields.io/badge/ros-humble-blue.svg)|![Pass](https://img.shields.io/badge/Pass-blue.svg)|
 
-> 注：安装使用过程中出现问题可查看第5部分
+> 주의: 설치 및 사용 과정에서 문제가 발생하면 5장을 참고하세요.
 
-## 1 安装Moveit2
+## 1 Moveit2 설치
 
-1）二进制安装，[参考链接](https://moveit.ai/install-moveit2/binary/)
+1) 바이너리 설치, [참고 링크](https://moveit.ai/install-moveit2/binary/)
 
 ```bash
 sudo apt install ros-humble-moveit*
 ```
 
-2）源码编译方法，[参考链接](https://moveit.ai/install-moveit2/source/)
+2) 소스 컴파일 방법, [참고 링크](https://moveit.ai/install-moveit2/source/)
 
-## 2 使用环境
+## 2 사용 환경
 
-安装完Moveit2之后，需要安装一些依赖
+Moveit2 설치 후 몇 가지 의존성을 설치해야 합니다.
 
 ```bash
 sudo apt-get install ros-humble-control* ros-humble-joint-trajectory-controller ros-humble-joint-state-* ros-humble-gripper-controllers ros-humble-trajectory-msgs
 ```
 
-若系统语言区域设置不为英文区域，须设置
+시스템 언어 로케일이 영어 로케일이 아닌 경우 다음을 설정해야 합니다.
 
 ```bash
 echo "export LC_NUMERIC=en_US.UTF-8" >> ~/.bashrc
 source ~/.bashrc
 ```
 
-## 3 moveit控制真实机械臂
+## 3 moveit으로 실제 로봇팔 제어
 
-### 3.1 开启piper_ros
+### 3.1 piper_ros 실행
 
-按照[piper_ros](../../README.MD#1-安装方法)配置完后
+[piper_ros](../../README.MD#1-안내-방법) 설정을 완료한 후
 
 ```bash
 cd ~/piper_ros
@@ -47,29 +47,29 @@ source install/setup.bash
 bash can_activate.sh can0 1000000
 ```
 
-开启控制节点
+제어 노드 실행
 
 ```bash
 ros2 launch piper start_single_piper.launch.py gripper_val_mutiple:=2
 ```
 
-### 3.2 moveit2控制
+### 3.2 moveit2 제어
 
-开启moveit2
+moveit2 실행
 
 ```bash
 cd ~/piper_ros
-conda deactivate # 若无conda环境可去除此行
+conda deactivate # conda 환경이 없으면 이 줄은 제거하세요
 source install/setup.bash
 ```
 
-#### 3.2.1 无夹爪运行
+#### 3.2.1 그리퍼 없이 실행
 
 ```bash
 ros2 launch piper_no_gripper_moveit demo.launch.py
 ```
 
-#### 3.2.2 有夹爪运行
+#### 3.2.2 그리퍼 있게 실행
 
 ```bash
 ros2 launch piper_with_gripper_moveit demo.launch.py
@@ -77,34 +77,34 @@ ros2 launch piper_with_gripper_moveit demo.launch.py
 
 ![piper_moveit](../../asserts/pictures/piper_moveit.png)
 
-可以直接拖动机械臂末端的箭头控制机械臂
+로봇팔 말단의 화살표를 직접 드래그하여 로봇팔을 제어할 수 있습니다.
 
-调整好位置后点击左侧MotionPlanning中Planning的Plan&Execute即可开始规划并运动
+위치를 조정한 후 왼쪽 MotionPlanning의 Planning에서 Plan&Execute를 클릭하면 계획 및 동작이 시작됩니다.
 
-## 4 moveit控制仿真机械臂
+## 4 moveit으로 시뮬레이션 로봇팔 제어
 
 ### 4.1 gazebo
 
-#### 4.1.1 运行gazebo
+#### 4.1.1 gazebo 실행
 
-见 [piper_gazebo](../piper_sim/README.md#1-gazebo仿真)
+[piper_gazebo](../piper_sim/README.md#1-gazebo-시뮬레이션) 참고
 
-#### 5.1.2 moveit控制
+#### 5.1.2 moveit 제어
 
 ```bash
 cd ~/piper_ros
 source install/setup.bash
 ```
 
-注: **下面的launch不是控制真实机械臂的demo.launch.py,且需要在gazebo之后运行,否则会没有机械臂模型**
+주의: **아래의 launch는 실제 로봇팔을 제어하는 demo.launch.py가 아니며, gazebo를 실행한 뒤에 실행해야 합니다. 그렇지 않으면 로봇팔 모델이 나타나지 않습니다.**
 
-有夹爪运行
+그리퍼 있게 실행
 
 ```bash
 ros2 launch piper_with_gripper_moveit piper_moveit.launch.py
 ```
 
-无夹爪运行
+그리퍼 없이 실행
 
 ```bash
 ros2 launch piper_no_gripper_moveit piper_moveit.launch.py
@@ -112,39 +112,39 @@ ros2 launch piper_no_gripper_moveit piper_moveit.launch.py
 
 ### 5.2 mujoco
 
-#### 5.2.1 moveit控制（先运行moveit）
+#### 5.2.1 moveit 제어(먼저 moveit 실행)
 
-同 [3.2 moveit2控制](#32-moveit2控制)
+[3.2 moveit2 제어](#32-moveit2-제어)와 동일
 
-#### 5.2.2 运行mujoco
+#### 5.2.2 mujoco 실행
 
-见 [piper_mujoco](../piper_sim/README.md#2-mujoco仿真)
+[piper_mujoco](../piper_sim/README.md#2-mujoco-시뮬레이션) 참고
 
-注：**关闭可以使用ctrl+C+\\**
+주의: **종료하려면 ctrl+C+\\를 사용하면 됩니다.**
 
-## 5 可能遇见的问题
+## 5 발생할 수 있는 문제
 
-### 5.1 打开gazebo时报错，提示urdf未加载，导致仿真环境中机械臂末端与底座穿模
+### 5.1 gazebo를 열 때 urdf가 로드되지 않았다는 오류가 발생하여, 시뮬레이션 환경에서 로봇팔 말단과 베이스가 겹쳐 보이는 경우
 
-1 注意编译后的install下piper_description中是否有config，且config中是否包含src/piper/piper_description中config的文件
+1 컴파일 후 install 아래의 piper_description에 config가 있는지, 그리고 그 config에 src/piper/piper_description의 config 파일이 포함되어 있는지 확인하세요.
 
-install中缺少urdf同理
+install에 urdf가 없는 경우도 마찬가지입니다.
 
-2 注意src/piper/piper_description/urdf/piper_description_gazebo.xacro中644行的路径是否正确，如确认后问题依然存在，将路径改为绝对路径
+2 src/piper/piper_description/urdf/piper_description_gazebo.xacro의 644번째 줄 경로가 올바른지 확인하세요. 확인 후에도 문제가 계속되면 경로를 절대 경로로 변경하세요.
 
-### 5.2 运行demo.launch.py时报错
+### 5.2 demo.launch.py 실행 시 오류 발생
 
-报错：参数需要一个double，而提供的是一个string
-解决办法：
-终端运行
+오류: 파라미터에 double이 필요한데 string이 제공됨
+해결 방법:
+터미널에서 실행
 
 ```bash
 echo "export LC_NUMERIC=en_US.UTF-8" >> ~/.bashrc
 source ~/.bashrc
 ```
 
-或在运行launch前加上LC_NUMERIC=en_US.UTF-8
-例如
+또는 launch를 실행하기 전에 LC_NUMERIC=en_US.UTF-8을 붙입니다.
+예를 들어
 
 ```bash
 LC_NUMERIC=en_US.UTF-8 ros2 launch piper_moveit_config demo.launch.py

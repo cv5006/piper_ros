@@ -4,7 +4,7 @@ from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 import os
 
-os.environ["RCUTILS_COLORIZED_OUTPUT"] = "1"   # 强制彩色日志
+os.environ["RCUTILS_COLORIZED_OUTPUT"] = "1"   # 컬러 로그 강제 적용
 
 def generate_launch_description():
     log_level_arg = DeclareLaunchArgument(

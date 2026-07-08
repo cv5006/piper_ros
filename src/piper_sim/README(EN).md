@@ -1,6 +1,6 @@
 # piper_sim
 
-[中文](README.md)
+[한국어](README.md)
 
 ![ubuntu](https://img.shields.io/badge/Ubuntu-22.04-orange.svg)
 

@@ -8,18 +8,18 @@
 |---|---|
 |![ros](https://img.shields.io/badge/ROS-humble-blue.svg)|![Pass](https://img.shields.io/badge/Pass-blue.svg)|
 
-## 1 gazebo仿真
+## 1 gazebo 시뮬레이션
 
-### 0 环境配置
+### 0 환경 설정
 
 ```bash
 sudo apt update
 sudo apt install gazebo ros-humble-gazebo-ros-pkgs ros-humble-gazebo-ros2-control ros-humble-ros2-control ros-humble-ros2-controllers
 ```
 
-### 1.1 piper gazebo仿真(有夹爪)
+### 1.1 piper gazebo 시뮬레이션(그리퍼 있음)
 
-gazebo仿真运行
+gazebo 시뮬레이션 실행
 
 ```bash
 cd piper_ros
@@ -30,53 +30,53 @@ source install/setup.bash
 ros2 launch piper_gazebo piper_gazebo.launch.py
 ```
 
-### 1.2 piper gazebo仿真(无夹爪)
+### 1.2 piper gazebo 시뮬레이션(그리퍼 없음)
 
 ```bash
 ros2 launch piper_gazebo piper_no_gripper_gazebo.launch.py
 ```
 
-注：**若通过moveit控制时需要先启动gazebo，再启动moveit，并且使用piper_moveit.launch.py而不是demo.launch.py**
+주의: **moveit으로 제어할 경우 먼저 gazebo를 실행한 뒤 moveit을 실행해야 하며, demo.launch.py가 아닌 piper_moveit.launch.py를 사용해야 합니다.**
 
-## 2 mujoco仿真
+## 2 mujoco 시뮬레이션
 
-### 2.1 mujoco210和mujoco-py的安装
+### 2.1 mujoco210과 mujoco-py 설치
 
-#### 2.1.1 安装mujoco
+#### 2.1.1 mujoco 설치
 
-1、[下载mujoco210](https://github.com/google-deepmind/mujoco/releases/download/2.1.0/mujoco210-linux-x86_64.tar.gz)
+1、[mujoco210 다운로드](https://github.com/google-deepmind/mujoco/releases/download/2.1.0/mujoco210-linux-x86_64.tar.gz)
 
-2、解压
+2、압축 해제
 
 ```bash
 mkdir ~/.mujoco
-cd (压缩包所在目录)
+cd (압축 파일이 있는 디렉터리)
 tar -zxvf mujoco210-linux-x86_64.tar.gz -C ~/.mujoco
 ```
 
-3、添加环境变量
+3、환경 변수 추가
 
 ```bash
 echo "export LD_LIBRARY_PATH=~/.mujoco/mujoco210/bin:\$LD_LIBRARY_PATH" >> ~/.bashrc
 source ~/.bashrc
 ```
 
-4、测试
+4、테스트
 
 ```bash
 cd ~/.mujoco/mujoco210/bin
 ./simulate ../model/humanoid.xml
 ```
 
-#### 2.1.2 安装mujoco-py
+#### 2.1.2 mujoco-py 설치
 
-1、下载源码
+1、소스 코드 다운로드
 
 ```bash
 git clone https://github.com/openai/mujoco-py.git
 ```
 
-2、安装(这一部可以在conda环境中进行)
+2、설치(이 단계는 conda 환경에서 진행할 수 있습니다)
 
 ```bash
 cd mujoco-py
@@ -88,18 +88,18 @@ sudo apt install libosmesa6-dev
 sudo apt install patchelf
 ```
 
-3、添加环境变量
+3、환경 변수 추가
 
 ```bash
 echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib/nvidia" >> ~/.bashrc
 source ~/.bashrc
 ```
 
-4、测试
+4、테스트
 
-注：**有时会在导入mujoco_py报错，按照报错要求更新numpy、cmake等版本即可**
+주의: **mujoco_py를 임포트할 때 오류가 발생하는 경우가 있는데, 오류 메시지의 안내에 따라 numpy, cmake 등의 버전을 업데이트하면 됩니다.**
 
-python运行
+python 실행
 
 ```python
 import mujoco_py
@@ -113,9 +113,9 @@ sim.step()
 print(sim.data.qpos)
 ```
 
-### 2.2 piper mujoco仿真(有夹爪)
+### 2.2 piper mujoco 시뮬레이션(그리퍼 있음)
 
-mujoco仿真运行
+mujoco 시뮬레이션 실행
 
 ```bash
 cd piper_ros
@@ -126,9 +126,9 @@ source install/setup.bash
 ros2 run piper_mujoco piper_mujoco_ctrl.py
 ```
 
-注：**若出现不能控制mujoco机械臂，请重新启动mujoco**
+주의: **mujoco 로봇팔이 제어되지 않으면 mujoco를 다시 실행하세요.**
 
-通过rviz_gui控制有夹爪机械臂(新终端运行)
+rviz_gui로 그리퍼 있는 로봇팔 제어(새 터미널에서 실행)
 
 ```bash
 cd piper_ros
@@ -139,9 +139,9 @@ source install/setup.bash
 ros2 launch piper_description display_urdf.launch.py
 ```
 
-#### 2.3 piper mujoco仿真(无夹爪)
+#### 2.3 piper mujoco 시뮬레이션(그리퍼 없음)
 
-mujoco仿真运行
+mujoco 시뮬레이션 실행
 
 ```bash
 cd piper_ros
@@ -152,7 +152,7 @@ source install/setup.bash
 ros2 run piper_mujoco piper_no_gripper_mujoco_ctrl.py
 ```
 
-通过rviz_gui控制无夹爪机械臂(新终端运行)
+rviz_gui로 그리퍼 없는 로봇팔 제어(새 터미널에서 실행)
 
 ```bash
 cd piper_ros
@@ -163,16 +163,16 @@ source install/setup.bash
 ros2 launch piper_description display_no_gripper_urdf.launch.py
 ```
 
-注：**如果不能控制，请在运行rviz_gui后运行mujoco**
+주의: **제어가 되지 않으면 rviz_gui를 실행한 후에 mujoco를 실행하세요.**
 
-#### 控制参数介绍
+#### 제어 파라미터 소개
 
-[有夹爪控制参数](../piper_description/mujoco_model/piper_description.xml)
+[그리퍼 있는 버전 제어 파라미터](../piper_description/mujoco_model/piper_description.xml)
 
-[无夹爪控制参数](../piper_description/mujoco_model/piper_no_gripper_description.xml)
+[그리퍼 없는 버전 제어 파라미터](../piper_description/mujoco_model/piper_no_gripper_description.xml)
 
-- damping="100 更改关节阻尼
+- damping="100 관절 댐핑(damping) 변경
 
-- kp="10000" 更改关节控制增益
+- kp="10000" 관절 제어 게인(gain) 변경
 
-- forcerange="-100 100" 更改关节控制力矩
+- forcerange="-100 100" 관절 제어 토크(torque) 변경

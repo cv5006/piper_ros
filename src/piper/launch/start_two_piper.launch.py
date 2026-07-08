@@ -4,7 +4,7 @@ from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 import os
 
-os.environ["RCUTILS_COLORIZED_OUTPUT"] = "1"   # 强制彩色日志
+os.environ["RCUTILS_COLORIZED_OUTPUT"] = "1"   # 컬러 로그 강제 적용
 
 def generate_launch_description():
     log_level_arg = DeclareLaunchArgument(
@@ -63,10 +63,10 @@ def generate_launch_description():
             'gripper_val_mutiple': LaunchConfiguration('gripper_val_mutiple'),
         }],
         remappings=[
-            # 控制
+            # 제어
             ('pos_cmd', '/pos_cmd_left'),
             ('joint_ctrl_single', '/joint_ctrl_cmd_left'),
-            # 反馈
+            # 피드백
             ('joint_states_single', '/joint_states_left'),
             ('joint_states_feedback', '/joint_left'),
             ('joint_ctrl', '/joint_states_ctrl_left'),
@@ -90,10 +90,10 @@ def generate_launch_description():
             'gripper_val_mutiple': LaunchConfiguration('gripper_val_mutiple'),
         }],
         remappings=[
-            # 控制
+            # 제어
             ('pos_cmd', '/pos_cmd_right'),
             ('joint_ctrl_single', '/joint_ctrl_cmd_right'),
-            # 反馈
+            # 피드백
             ('joint_states_single', '/joint_states_right'),
             ('joint_states_feedback', '/joint_right'),
             ('joint_ctrl', '/joint_states_ctrl_right'),

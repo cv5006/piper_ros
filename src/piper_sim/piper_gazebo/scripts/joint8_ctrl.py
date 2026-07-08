@@ -8,7 +8,7 @@ class GripperMirrorController(Node):
     def __init__(self):
         super().__init__('gripper_mirror_controller')
 
-        # 订阅 joint7 的状态
+        # joint7 상태 구독
         self.subscription = self.create_subscription(
             JointTrajectoryControllerState,
             '/gripper_controller/controller_state',
@@ -16,21 +16,21 @@ class GripperMirrorController(Node):
             10
         )
 
-        # 发布 joint8 控制命令
+        # joint8 제어 명령 발행
         self.publisher = self.create_publisher(
             JointTrajectory,
             '/gripper8_controller/joint_trajectory',
             10
         )
 
-        # 定时器，控制每秒发布的频率
+        # 타이머, 초당 발행 빈도 제어
         self.timer = self.create_timer(0.02, self.publish_joint8_command)
 
-        self.joint7_position = None  # 用于存储 joint7 的位置
+        self.joint7_position = None  # joint7 위치 저장용
 
     def joint_state_callback(self, msg):
         try:
-            # 找到 joint7 的索引
+            # joint7 인덱스 찾기
             joint_index = msg.joint_names.index("joint7")
             self.joint7_position = msg.reference.positions[joint_index]
 
@@ -39,20 +39,20 @@ class GripperMirrorController(Node):
 
     def publish_joint8_command(self):
         if self.joint7_position is not None:
-            # 计算反向值
+            # 반대 값 계산
             joint8_position = -self.joint7_position
 
-            # 创建 JointTrajectory 消息
+            # JointTrajectory 메시지 생성
             traj_msg = JointTrajectory()
             traj_msg.joint_names = ["joint8"]
 
-            # 设定轨迹点
+            # 궤적 지점 설정
             point = JointTrajectoryPoint()
             point.positions = [joint8_position]
 
             traj_msg.points.append(point)
 
-            # 发布到 gripper8_controller
+            # gripper8_controller로 발행
             self.publisher.publish(traj_msg)
 
 def main(args=None):

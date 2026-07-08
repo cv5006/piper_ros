@@ -19,9 +19,9 @@ def generate_launch_description():
 
     ld = LaunchDescription()
 
-    # 启动move_group
+    # move_group 실행
     my_generate_move_group_launch(ld, moveit_config)
-    # 启动rviz
+    # rviz 실행
     my_generate_moveit_rviz_launch(ld, moveit_config)
 
     return ld
