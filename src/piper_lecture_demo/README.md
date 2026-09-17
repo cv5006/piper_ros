@@ -481,6 +481,71 @@ MoveIt 의 **Trajectory 디스플레이가 궤적을 계속 재생**하기 때�
 남아 있는 Trajectory 디스플레이는 MoveIt 스택의 `MotionPlanning`(계획된 경로) 하나뿐이고,
 그쪽은 **재생되는 것이 맞다** — 계획한 궤적을 보여주는 것이 일이기 때문이다.
 
+## 실물 팔에 물리기 — `real:=true`
+
+```bash
+ros2 launch piper_lecture_demo moveit_demo.launch.py real:=true
+ros2 launch piper_lecture_demo moveit_demo.launch.py real:=true stub:=true   # 실물 없이
+```
+
+`mock_components/GenericSystem` 자리를 `piper_real_adapter.py` 가 대신한다. MoveIt 이
+부르는 것과 piper 드라이버가 가진 것 사이가 비어 있어서, 그 사이를 메우는 노드다.
+
+| MoveIt 이 부르는 것 | piper 드라이버가 가진 것 |
+|---|---|
+| `/arm_controller/follow_joint_trajectory` (joint1~6) | `joint_ctrl_single` — JointState 하나가 목표 자세 하나 |
+| `/gripper_controller/follow_joint_trajectory` (joint7) | (같음. `position[6]` 이 그리퍼) |
+| `/joint_states` (상태) | `joint_states_feedback` |
+
+어댑터가 하는 일은 셋이다.
+
+1. **상태 다리** — `joint_states_feedback` → `/joint_states`. 드라이버는 일곱째를
+   **`gripper`** 라고 부르는데 모델은 `joint7` 이라 이름을 바꾸고, `joint8` 도 대칭으로
+   채운다. **그래서 「`Missing joint8`」 경고가 여기서 사라진다** (측정: 0 건).
+2. **명령 다리** — `joint_ctrl_single` 로 목표를 쏜다. `velocity[6]` 에 속도(%)를
+   **반드시** 채운다.
+3. **궤적 실행** — 액션 서버 둘. 드라이버의 `JointCtrl` 은 보간이 없으므로,
+   경유점 사이를 어댑터가 보간해 100 Hz 로 쏘는 것이 곧 실행이다.
+
+### 안전장치 넷
+
+| | |
+|---|---|
+| **속도** | `speed_percent` (기본 **20**). 비워 두면 드라이버가 `MotionCtrl_2(…, 100)` 으로 **전속**을 건다 |
+| **계단 명령** | 첫 경유점이 지금 자세에서 `max_step_rad`(기본 0.35 rad = 20°) 넘게 떨어져 있으면 goal 을 거절한다 |
+| **enable** | goal 을 받으면 `enable_srv` 를 먼저 부른다. 실패하면 움직이지 않는다 |
+| **취소** | 취소가 오면 지금 자세를 목표로 다시 쏴 **그 자리에 세운다** |
+
+### ⚠ remap 을 하지 않는 이유
+
+piper 의 `start_single_piper.launch.py` 는 `joint_ctrl_single` 을 `/joint_states` 로
+remap 한다. 그 상태로 어댑터를 켜면 **상태 다리가 내보낸 값이 그대로 명령으로
+되돌아가 루프가 된다.** 그래서 `real:=true` 는 그 런치를 쓰지 않고 드라이버 노드를
+remap 없이 직접 띄운다. 확인: `/joint_states` 발행자 1 · 구독자 3(rsp · move_group ·
+D6), `/joint_ctrl_single` 발행자 1(어댑터) · 구독자 1(드라이버).
+
+### 실물 없이 어디까지 확인했나
+
+`can0` 가 없는 상태에서 `stub:=true` 로 전 구간을 돌렸다.
+
+| 확인된 것 | |
+|---|---|
+| 액션 → 보간 → 명령 | 궤적 goal 이 `SUCCEEDED`, 스텁 팔이 목표에 정확히 도달 |
+| 속도 필드 | 스텁이 받은 모든 명령에 **20 %** 가 채워져 있다 (100 % 아님) |
+| enable | 첫 goal 에서 `enable -> True` |
+| 되먹임 없음 | 위 발행자/구독자 수 |
+| `joint8` | `/joint_states` 에 여덟 관절, `Missing joint8` **0 건** |
+| MoveIt 전 구간 | `d5_interp_compare` 의 계획·실행이 끝까지 돈다 (`Execute request success!` ×4) |
+| 계단 방어 | 72° 떨어진 goal 을 `ABORTED` + 사유 문자열로 거절 |
+
+**확인되지 않은 것** — CAN 타이밍 · 실제 추종 오차 · 관절 한계에서의 거동 ·
+그리퍼 힘. 스텁은 토픽 인터페이스만 흉내 내고 1차 지연으로 따라가는 시늉을 할 뿐이다.
+**실물에서 다시 재야 한다.**
+
+> D1 스택은 실물에 물리지 않았다. `/joint_states` 를 명령으로 쓰는 구조라 물리면
+> 프리셋 버튼이 그대로 팔을 움직이는데, 특이점 자세가 프리셋에 들어 있고 속도·정지
+> 수단이 없다. 아래 경고가 그대로 유효하다.
+
 ## ⚠ 실물을 연결한 채로 띄우지 말 것
 
 이 레포에서 `/joint_states` 는 상태 토픽이 아니라 **명령 토픽**이다
@@ -919,6 +984,8 @@ piper_lecture_demo/
 │   ├── d3_obstacle.py                 D3 충돌 물체 spawn/despawn
 │   ├── d3_tcp_offset.py               D3 link6 vs 손끝 표시 (TF 만 읽는다)
 │   ├── d6_ik_branches.py              D6 IK 해 전수 탐색 (상주 · 서비스)
+│   ├── piper_real_adapter.py          MoveIt 스택을 실물 팔에 물린다
+│   ├── piper_driver_stub.py           드라이버 대역 (실물 없이 시험용)
 │   └── lecture_panel.py               강의용 버튼 창 (PyQt5)
 ├── src/
 │   └── d5_interp_compare.cpp          D5

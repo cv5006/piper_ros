@@ -38,6 +38,8 @@ install(PROGRAMS
   scripts/d3_tcp_offset.py
   scripts/d6_ik_branches.py
   scripts/lecture_panel.py
+  scripts/piper_real_adapter.py
+  scripts/piper_driver_stub.py
   DESTINATION lib/${PROJECT_NAME})
 
 ament_python_install_package(${PROJECT_NAME})

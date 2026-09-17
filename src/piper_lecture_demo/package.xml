@@ -26,6 +26,10 @@
   <!-- D1 · D2 (URDF 만 읽는 도구. 런타임 의존은 rclpy + numpy 뿐) -->
   <exec_depend>rclpy</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>control_msgs</exec_depend>          <!-- 실물 어댑터의 액션 -->
+  <exec_depend>trajectory_msgs</exec_depend>
+  <exec_depend>piper_msgs</exec_depend>            <!-- enable_srv -->
+  <exec_depend>piper</exec_depend>                 <!-- 실물 드라이버 노드 -->
   <exec_depend>std_msgs</exec_depend>
   <exec_depend>python3-numpy</exec_depend>
   <exec_depend>python3-opencv</exec_depend>   <!-- D1 의 2D 숫자판 렌더링 -->
