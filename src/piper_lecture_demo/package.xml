@@ -5,7 +5,7 @@
   <version>0.1.0</version>
   <description>
     로보틱스 기초 특강(2회차 「운동 — Jacobian과 Inverse Kinematics」) 시연용 데모 모음.
-    로봇 모델은 만들지 않고 piper_description 의 것을 쓴다.
+    로봇 모델과 MoveIt 설정은 만들지 않고 piper_description / piper_with_gripper_moveit 의 것을 쓴다.
   </description>
   <maintainer email="hwiwon@hanwha.com">hwiwon</maintainer>
   <license>MIT</license>
@@ -13,23 +13,37 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
   <buildtool_depend>ament_cmake_python</buildtool_depend>
 
-  <!-- D1 은 URDF 하나만 읽는다. MoveIt 도 KDL 도 쓰지 않는다. -->
+  <!-- D3 · D4 · D5 (MoveIt 을 얹는 데모) -->
+  <depend>rclcpp</depend>
+  <depend>moveit_ros_planning_interface</depend>
+  <depend>moveit_core</depend>
+  <depend>geometry_msgs</depend>
+  <depend>visualization_msgs</depend>
+  <depend>shape_msgs</depend>
+  <depend>tf2_eigen</depend>
+  <depend>tf2_geometry_msgs</depend>
+
+  <!-- D1 · D2 (URDF 만 읽는 도구. 런타임 의존은 rclpy + numpy 뿐) -->
   <exec_depend>rclpy</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
-  <exec_depend>geometry_msgs</exec_depend>
   <exec_depend>std_msgs</exec_depend>
-  <exec_depend>visualization_msgs</exec_depend>
-  <exec_depend>tf2_ros</exec_depend>
   <exec_depend>python3-numpy</exec_depend>
   <exec_depend>python3-opencv</exec_depend>   <!-- D1 의 2D 숫자판 렌더링 -->
 
-  <!-- 로봇 모델은 piper 것을 쓴다 -->
+  <!-- 모델 · MoveIt 설정은 전부 piper 것을 쓴다 -->
   <exec_depend>piper_description</exec_depend>
+  <exec_depend>piper_with_gripper_moveit</exec_depend>
 
   <exec_depend>robot_state_publisher</exec_depend>
   <exec_depend>joint_state_publisher</exec_depend>
   <exec_depend>joint_state_publisher_gui</exec_depend>
+  <exec_depend>controller_manager</exec_depend>
+  <exec_depend>joint_trajectory_controller</exec_depend>
+  <exec_depend>joint_state_broadcaster</exec_depend>
+  <exec_depend>moveit_ros_move_group</exec_depend>
+  <exec_depend>moveit_ros_visualization</exec_depend>
   <exec_depend>rviz2</exec_depend>
+  <exec_depend>xacro</exec_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
