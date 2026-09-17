@@ -222,3 +222,69 @@ def metrics(Jv):
     w = float(np.prod(sigma))
     cond = float(sigma[0] / sigma[-1]) if sigma[-1] > 1e-12 else float("inf")
     return U, sigma, w, cond
+
+
+class Visuals:
+    """URDF 의 링크를 **어디에 어떤 메시로** 그리는지. 로봇을 여러 벌 그릴 때 쓴다.
+
+    쓰는 이유는 하나다 — MoveIt 의 Trajectory 디스플레이가 **SRDF 를 요구한다.**
+    D1 스택에는 `robot_description` 만 있고 `robot_description_semantic` 이 없어서
+    그 디스플레이는 뜨지 못한다 (`Unable to parse SRDF`). 링크 메시를 Marker 로
+    직접 놓으면 rviz 기본 플러그인만으로 되고, URDF 하나만 읽는 이 패키지의
+    D1 · D2 와 조건이 같아진다.
+
+    Chain 과 달리 **사슬 하나가 아니라 트리 전체**를 본다. 손가락처럼 가지로
+    갈라져 나온 링크도 제자리에 놓아야 로봇으로 보이기 때문이다.
+    """
+
+    def __init__(self, urdf_path, base="base_link"):
+        root = ET.parse(urdf_path).getroot()
+        self.base = base
+
+        self.mesh = {}          # 링크 -> (메시 URI, 링크 프레임에서의 4x4, 배율 3-벡터)
+        for link in root.findall("link"):
+            mesh = link.find("visual/geometry/mesh")
+            if mesh is None:                       # 메시가 없는 링크는 그리지 않는다
+                continue
+            origin = link.find("visual/origin")
+            T = np.eye(4)
+            if origin is not None:
+                if origin.get("rpy"):
+                    T[:3, :3] = rpy_to_matrix([float(v) for v in origin.get("rpy").split()])
+                if origin.get("xyz"):
+                    T[:3, 3] = [float(v) for v in origin.get("xyz").split()]
+            scale = [float(v) for v in (mesh.get("scale") or "1 1 1").split()]
+            self.mesh[link.get("name")] = (mesh.get("filename"), T, scale)
+
+        self.children = {}
+        for j in (Joint(e) for e in root.findall("joint")):
+            self.children.setdefault(j.parent, []).append(j)
+
+    @property
+    def links(self):
+        """그릴 수 있는 링크를 URDF 에 적힌 순서로."""
+        return list(self.mesh)
+
+    def link_poses(self, q_by_name):
+        """관절값(이름 -> 값, 빠진 것은 0)으로 모든 링크의 ⁰T 를 구한다.
+
+        base 에서 트리를 따라 내려가며 T_child = T_parent · origin · move 를 쌓는다.
+        Chain.frames() 가 사슬 하나에 대해 하는 일과 같은 식이다.
+        """
+        poses = {self.base: np.eye(4)}
+        stack = [self.base]
+        while stack:
+            parent = stack.pop()
+            for j in self.children.get(parent, []):
+                T = poses[parent] @ j.origin
+                if j.movable:
+                    v = float(q_by_name.get(j.name, 0.0))
+                    move = np.eye(4)
+                    if j.type == "prismatic":
+                        move[:3, 3] = j.axis * v
+                    else:
+                        move[:3, :3] = axis_angle_to_matrix(j.axis, v)
+                    T = T @ move
+                poses[j.child] = T
+                stack.append(j.child)
+        return poses

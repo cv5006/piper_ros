@@ -144,6 +144,60 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /manipulability_readout
       Value: true
+    - Class: rviz_default_plugins/MarkerArray
+      Name: IK solutions (within limits)
+      Enabled: true
+      Namespaces:
+        ik_valid: true
+      Topic:
+        Depth: 5
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /ik_branches/valid
+      Value: true
+    - Class: rviz_default_plugins/MarkerArray
+      Name: IK solutions (out of limits)
+      Enabled: true
+      Namespaces:
+        ik_invalid: true
+      Topic:
+        Depth: 5
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /ik_branches/invalid
+      Value: true
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Workspace — reachable (D2)
+      Enabled: true
+      Topic:
+        Depth: 1
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /workspace/reachable
+      Style: Points
+      Size (Pixels): 2
+      Alpha: 0.35
+      Color Transformer: RGB8
+      Decay Time: 0
+      Value: true
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Workspace — oriented (D2)
+      Enabled: true
+      Topic:
+        Depth: 1
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /workspace/oriented
+      Style: Points
+      Size (Pixels): 4
+      Alpha: 1
+      Color Transformer: RGB8
+      Decay Time: 0
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 38; 38; 40

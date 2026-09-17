@@ -36,36 +36,31 @@ Visualization Manager:
       Durability Policy: Transient Local
       Reliability Policy: Reliable
     Namespaces: {}
-  - Class: moveit_rviz_plugin/Trajectory
+  - Class: rviz_default_plugins/MarkerArray
     Name: IK solutions (within limits)
     Enabled: true
-    Robot Description: robot_description
-    Trajectory Topic: /ik_branches/valid
-    Show Robot Visual: true
-    Show Robot Collision: false
-    Robot Alpha: 0.55
-    Color Enabled: true
-    Robot Color: 60; 200; 90
-    Show Trail: true
-    Trail Step Size: 1
-    Loop Animation: true
-    Interrupt Display: false
+    Namespaces:
+      ik_valid: true
+    Topic:
+      Depth: 5
+      Durability Policy: Transient Local
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Value: /ik_branches/valid
     Value: true
-  - Class: moveit_rviz_plugin/Trajectory
+  - Class: rviz_default_plugins/MarkerArray
     Name: IK solutions (out of limits)
-    Enabled: false
-    Robot Description: robot_description
-    Trajectory Topic: /ik_branches/invalid
-    Show Robot Visual: true
-    Show Robot Collision: false
-    Robot Alpha: 0.55
-    Color Enabled: true
-    Robot Color: 220; 70; 60
-    Show Trail: true
-    Trail Step Size: 1
-    Loop Animation: true
-    Interrupt Display: false
+    Enabled: true
+    Namespaces:
+      ik_invalid: true
+    Topic:
+      Depth: 5
+      Durability Policy: Transient Local
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Value: /ik_branches/invalid
     Value: true
+  Enabled: true
   Global Options:
     Fixed Frame: world
   Tools:

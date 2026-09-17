@@ -34,6 +34,9 @@ from geometry_msgs.msg import Point, TransformStamped
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from sensor_msgs.msg import Image, JointState
+from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
+from std_msgs.msg import Bool
+from std_srvs.srv import SetBool
 from tf2_ros import StaticTransformBroadcaster
 from visualization_msgs.msg import Marker, MarkerArray
 
@@ -68,6 +71,8 @@ class Manipulability(Node):
         #   marker — 3D 텍스트 마커. 카메라에 따라 크기가 변하고 팔에 가린다
         #   both / none
         self.declare_parameter("readout", "image")
+        # 타원체를 처음부터 감춘 채 띄우고 싶을 때. 강의 중에는 버튼으로 바꾼다.
+        self.declare_parameter("show", True)
 
         urdf = self.get_parameter("urdf").value
         self.tcp = np.array(self.get_parameter("tcp_offset").value, dtype=float)
@@ -86,10 +91,20 @@ class Manipulability(Node):
 
         self.q = np.zeros(self.chain.dof)
         self.have_q = False
+        self.show = bool(self.get_parameter("show").value)
+        self.cleared = False        # 감춘 뒤 지우기 마커를 이미 보냈나
 
         self.pub = self.create_publisher(MarkerArray, "manipulability", 1)
         self.pub_img = self.create_publisher(Image, "manipulability_readout", 1)
         self.create_subscription(JointState, "/joint_states", self.on_joints, 10)
+        self.srv_show = self.create_service(SetBool, "~/show", self.on_show)
+        # 지금 켜져 있나를 래치해서 알린다. 패널이 나중에 떠도 상태를 맞출 수 있고,
+        # 터미널로 껐다 켜도 버튼 라벨이 따라온다.
+        self.pub_shown = self.create_publisher(
+            Bool, "~/shown",
+            QoSProfile(depth=1, reliability=ReliabilityPolicy.RELIABLE,
+                       durability=DurabilityPolicy.TRANSIENT_LOCAL))
+        self.pub_shown.publish(Bool(data=self.show))
         self.create_timer(0.05, self.publish_markers)
         self.create_timer(0.1, self.publish_readout)
 
@@ -158,8 +173,36 @@ class Manipulability(Node):
         sigma6 = np.linalg.svd(J, compute_uv=False)  # 전체 6자유도
         return T[:3, 3], U, sigma, w, cond, sigma6
 
+    def on_show(self, req, res):
+        """타원체를 낼지 말지. D6 의 reveal 과 같은 방식이다 — 화면이 붐빌 때
+        (해 여덟 벌이 겹쳐 있을 때) 타원체를 잠깐 치우려고 둔 것이다."""
+        self.show = bool(req.data)
+        self.cleared = False
+        self.pub_shown.publish(Bool(data=self.show))
+        res.success = True
+        res.message = "타원체를 낸다" if self.show else "타원체를 감춘다"
+        return res
+
+    def clear_markers(self):
+        """지우기 마커 하나. ns 는 비운다 — 채우면 rviz 가 디스플레이를 오류로
+        표시하면서도 그리기는 정상으로 해서 원인을 찾기 어렵다."""
+        m = Marker()
+        m.header.frame_id = self.frame_id
+        m.header.stamp = self.get_clock().now().to_msg()
+        m.action = Marker.DELETEALL
+        m.pose.orientation.w = 1.0
+        arr = MarkerArray()
+        arr.markers.append(m)
+        self.pub.publish(arr)
+
     def publish_markers(self):
         if not self.have_q:
+            return
+        if not self.show:
+            # 20 Hz 로 지우기를 계속 보낼 이유가 없다. 한 번만 보내고 쉰다.
+            if not self.cleared:
+                self.clear_markers()
+                self.cleared = True
             return
         p, U, sigma, w, cond, sigma6 = self.state()
         quat = matrix_to_quaternion(U)
