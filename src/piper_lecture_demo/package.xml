@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>piper_lecture_demo</name>
+  <version>0.1.0</version>
+  <description>
+    로보틱스 기초 특강(2회차 「운동 — Jacobian과 Inverse Kinematics」) 시연용 데모 모음.
+    로봇 모델은 만들지 않고 piper_description 의 것을 쓴다.
+  </description>
+  <maintainer email="hwiwon@hanwha.com">hwiwon</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
+
+  <!-- D1 은 URDF 하나만 읽는다. MoveIt 도 KDL 도 쓰지 않는다. -->
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>visualization_msgs</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>python3-opencv</exec_depend>   <!-- D1 의 2D 숫자판 렌더링 -->
+
+  <!-- 로봇 모델은 piper 것을 쓴다 -->
+  <exec_depend>piper_description</exec_depend>
+
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>joint_state_publisher_gui</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
