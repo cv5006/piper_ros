@@ -9,7 +9,11 @@
 //
 // 플래너는 OMPL 하나만 쓴다. 직선은 플래너가 아니라 MoveIt 의 카테시안 보간이 만든다.
 //
-//   ros2 launch piper_lecture_demo d5_interp_compare.launch.py
+//   ros2 run piper_lecture_demo d5_interp_compare
+//
+// MoveIt 스택(moveit_demo.launch.py)을 먼저 띄워 둘 것. 기동할 때
+// 'No kinematics plugins defined' 경고가 한 줄 뜨는데 결과에는 영향이 없다 —
+// 이 노드가 자기 쪽에도 로봇 모델을 들고 있어야 해서 나는 소리다.
 
 #include <chrono>
 #include <memory>

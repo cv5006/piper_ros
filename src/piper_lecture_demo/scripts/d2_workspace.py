@@ -21,7 +21,10 @@
 
 읽는 것은 URDF 하나뿐이다. numpy 말고는 아무것도 필요 없다.
 
-    ros2 launch piper_lecture_demo d2_workspace.launch.py
+    ros2 launch piper_lecture_demo d1_manipulability.launch.py workspace:=true
+
+D1 스택에 얹혀 돈다. /joint_states 를 쓰지 않고 관절을 제 안에서 훑기 때문에
+자기 스택이 따로 필요 없다.
 """
 
 import struct

@@ -12,17 +12,22 @@
 | | 데모 | 담당 | MoveIt | 실행 |
 |---|---|---|---|---|
 | **D1** | manipulability 타원체 + σ_min | M1 · M3-3 · M3-4 | **안 씀** | `d1_manipulability.launch.py` |
-| **D2** | 작업영역 점구름 + 조건수 컬러맵 | M3-2 | **안 씀** | `d2_workspace.launch.py` |
+| **D2** | 작업영역 점구름 + 조건수 컬러맵 | M3-2 | **안 씀** | D1 런치에 `workspace:=true` |
 | **D3** | 충돌 환경 spawn/despawn · `link6` ≠ 손끝 | M4-2 · §12.3 | 씀 | `d3_obstacle.py` · `d3_tcp_offset.py` |
 | **D4** | 마커를 끌어 IK 를 만져본다 | M2 | 씀 | **제작 없음** — rviz MotionPlanning |
-| **D5** | 같은 두 자세, 두 경로 | M4-1 | 씀 | `d5_interp_compare.launch.py` |
-| **D6** | 해는 8개, 쓸 수 있는 것은 1개 | M2 · M3-2 | 씀 | `d6_ik_branches.py` |
+| **D5** | 같은 두 자세, 두 경로 | M4-1 | 씀 | `ros2 run … d5_interp_compare` |
+| **D6** | 해는 8개, 쓸 수 있는 것은 1개 | M2 · M3-2 | **안 씀** | `d6_ik_branches.py` — **두 스택 어디서나** |
 
-**D1 · D2 는 URDF 하나만 읽는다.** 의존성은 `numpy` 뿐이고 MoveIt 을 세우지 않은 팀도
-그대로 돌린다. Jacobian 은 `piper_lecture_demo/kinematics.py` 에 직접 구현돼 있다 —
+**D1 · D2 · D6 은 URDF 하나만 읽는다.** 의존성은 `numpy` 뿐이고 MoveIt 을 세우지 않은
+팀도 그대로 돌린다. Jacobian 은 `piper_lecture_demo/kinematics.py` 에 직접 구현돼 있다 —
 강의에서 다룬 `Jᵢ = zᵢ × (pₑ − pᵢ)` 가 그대로 코드다.
 
 **D3 · D4 · D5 는 MoveIt 을 얹는다.** 스택을 먼저 띄우고 데모를 실행한다.
+
+> **D6 은 D1 스택에서 도는 쪽이 낫다.** 해를 찾으려면 팔을 옮겨야 하는데, 그 수단인
+> 자세 프리셋이 D1 것이다. 게다가 타원체와 해가 한 화면에 같이 나온다 —
+> *"이 자세는 특이점이라 해가 낱개가 아니다"* 를 타원체로 보이면서 말할 수 있다.
+> D1 런치가 D6 을 같이 띄운다 (`ik:=false` 로 끈다).
 
 ---
 
@@ -32,8 +37,8 @@
 
 | | 무엇 | 예 |
 |---|---|---|
-| **`ros2 launch`** | **스택을 띄운다.** 로봇 모델 · rviz · 부속 노드가 한꺼번에 뜬다. 강의 내내 켜 둔다 | `d1_manipulability` · `d2_workspace` · `moveit_demo` |
-| **`ros2 run`** | **이미 떠 있는 스택에 붙어 한 가지 일을 하고 빠진다.** 자세를 바꾸거나, 물체를 세운다 | `d1_goto` · `d3_obstacle` · `d3_tcp_offset` |
+| **`ros2 launch`** | **스택을 띄운다.** 로봇 모델 · rviz · 부속 노드가 한꺼번에 뜬다. 강의 내내 켜 둔다 | `d1_manipulability` · `moveit_demo` — **이 둘뿐이다** |
+| **`ros2 run`** | **이미 떠 있는 스택에 붙어 한 가지 일을 하고 빠진다.** 자세를 바꾸거나, 물체를 세운다 | `d1_goto` · `d3_obstacle` · `d3_tcp_offset` · `d5_interp_compare` |
 | **버튼** | 위의 것들을 강의 중에 손으로 부른다 | `lecture_panel` (스택이 같이 띄운다) |
 
 스택은 한 번만 띄우고, 강의 중에 치는 것은 전부 `ros2 run` 쪽이다. rviz 를 내리지
@@ -44,14 +49,23 @@
 > `ros2 run piper_lecture_demo d5_interp_compare` 로도 결과는 같지만
 > `No kinematics plugins defined` 경고가 한 줄 뜬다.
 
-### URDF 계열 (D1 · D2)
+**런치는 둘뿐이다.** 스택이 둘이기 때문이다 — URDF 만 읽는 쪽과 MoveIt 을 얹는 쪽.
+데모마다 런치를 두지 않는다.
+
+| 런치 | 무엇이 뜨나 |
+|---|---|
+| `d1_manipulability.launch.py` | D1 · D2 · D6 + 패널 (URDF 만) |
+| `moveit_demo.launch.py` | D3 · D4 · D5 · D6 + 패널 (MoveIt 위) |
+
+### URDF 계열 (D1 · D2 · D6)
 
 ```bash
 ros2 launch piper_lecture_demo d1_manipulability.launch.py
-ros2 launch piper_lecture_demo d2_workspace.launch.py
+ros2 launch piper_lecture_demo d1_manipulability.launch.py workspace:=true   # D2 까지
 ```
 
 D1 은 **슬라이더와 프리셋을 둘 다 살려둔 채** 뜬다. 런치 인자로 고를 것이 없다.
+**D6(IK 해 전수 탐색)과 강의 패널도 같이 뜬다** — 끄려면 `ik:=false panel:=false`.
 
 ```bash
 ros2 launch piper_lecture_demo d1_manipulability.launch.py   # 한 번만
@@ -88,6 +102,28 @@ GUI 가 `/joint_states` 를 되받으므로 **프리셋 뒤에 슬라이더를 �
 납작해진다"* 를 보인 뒤, 마지막에 같은 `w` 를 들이밀어 *"그럼 w 가 작으면 특이점인가?"*
 를 깬다.
 
+**타원체는 껐다 켤 수 있다.** D6 의 해 여덟 벌이 화면에 겹쳐 있으면 타원체까지 보태져
+붐비는데, 그때 잠깐 치우고 자세만 보는 쪽이 낫다. 다시 켜면 그 자리에 그대로 돌아온다.
+
+```bash
+ros2 service call /d1_manipulability/show std_srvs/srv/SetBool "{data: false}"
+```
+
+패널의 **「타원체 감추기」** 버튼이 같은 일을 한다. 감춘 채로 띄우려면 런치 인자를 쓴다.
+
+```bash
+ros2 launch piper_lecture_demo d1_manipulability.launch.py ellipsoid:=false
+```
+
+⚠ `ros2 param set /d1_manipulability show false` 는 **듣지 않는다.** 파라미터는 기동할 때
+한 번만 읽는다. 켜고 끄는 것은 위 서비스(=버튼)다.
+
+지금 켜져 있는지는 `/d1_manipulability/shown` 에 래치돼 있다. 패널이 이것을 구독하므로
+**터미널로 껐다 켜도, `ellipsoid:=false` 로 띄웠어도 버튼 라벨이 실제 상태를 따른다.**
+
+> 숫자판(Image)은 따로 논다. 3D 화면을 가리지 않으므로 같이 끄지 않았다 —
+> 필요하면 `readout:=none` 으로 아예 안 띄운다.
+
 전환 속도와 왕복은 드라이버 파라미터로 바꾼다. 재기동은 필요 없다.
 
 ```bash
@@ -96,12 +132,18 @@ ros2 param set /d1_preset loop true
 ros2 param set /d1_preset preset wrist     # d1_goto.py 대신 이것도 된다
 ```
 
-D2 는 계산에 15초 안팎이 걸린다. 구름은 latch 되므로 rviz 를 나중에 띄워도 받는다.
-수직 단면만 보려면:
+**D2 는 D1 스택에 얹혀 있다.** `d2_workspace.py` 가 `/joint_states` 를 쓰지 않고 관절을
+제 안에서 훑기 때문에, 자기 스택을 따로 세울 이유가 없다. 계산에 16 초쯤 걸려서
+기본으로는 꺼 두고 필요할 때 켠다. 구름은 latch 되므로 계산이 끝나면 그대로 남는다.
 
 ```bash
-ros2 launch piper_lecture_demo d2_workspace.launch.py samples:="[1, 61, 61, 9, 9, 1]"
+ros2 launch piper_lecture_demo d1_manipulability.launch.py workspace:=true
+ros2 launch piper_lecture_demo d1_manipulability.launch.py \
+    workspace:=true samples:="[1, 61, 61, 9, 9, 1]"      # 수직 단면만
 ```
+
+rviz 의 **Workspace — reachable / oriented** 디스플레이 둘이 받는다. 타원체와 같은 화면이라
+*"이 자세가 왜 경계 근처인가"* 를 점구름 위에서 짚을 수 있다.
 
 ### MoveIt 계열 (D3 · D4 · D5)
 
@@ -130,21 +172,31 @@ ros2 launch piper_lecture_demo moveit_demo.launch.py panel:=false ik:=false   # 
 
 ### 강의 패널 — 버튼으로 돌린다
 
-`moveit_demo.launch.py` 가 같이 띄운다. rviz 옆에 두면 된다 (항상 위에 뜬다).
+`moveit_demo.launch.py` 와 `d1_manipulability.launch.py` 가 같이 띄운다.
+rviz 옆에 두면 된다 (항상 위에 뜬다). 버튼은 세 묶음이고, **IK 쪽은 스택을 가리지 않는다.**
 
 | 버튼 | 하는 일 |
 |---|---|
-| **IK 해 찾기 (D6)** | 지금 팔 자세의 손끝에 대해 해를 전부 찾아 rviz 에 낸다 |
+| **IK 해 찾기 (D6)** | 지금 팔 자세의 손끝에 대해 해를 전부 찾아 rviz 에 낸다 (약 1.5 초) |
+| **쓸 수 있는 해 감추기 / 보이기** | 초록을 냈다 뺐다 한다. 셋 다 끄면 **팔만 남는다** |
+| **나머지 해 보이기 / 감추기** | 한계 밖 해를 화면에 냈다 뺐다 한다. **다시 풀지 않으므로 즉시** |
 | **장애물 세우기 / 치우기** | planning scene 에 기둥을 더하고 뺀다 |
+| **타원체 감추기 / 보이기** | D1 의 manipulability 타원체를 화면에서 뺐다 넣었다 한다 |
 | **자세 프리셋** (good · stretch · elbow · wrist · slow · home · shoulder) | D1 스택의 자세 드라이버에게 보낸다 |
 
 두 스택은 같이 띄우지 않으므로, 지금 떠 있지 않은 쪽 버튼을 누르면 상태줄에
 「대상이 없다」고만 뜨고 아무 일도 일어나지 않는다.
 
+**일은 딴 스레드에서 한다.** 누르는 동안 버튼이 잠기고 상태줄이 「…」로 바뀐다.
+예전에는 버튼 콜백에서 그대로 기다려 그동안 창이 얼어붙었다.
+
 버튼이 하는 일은 전부 터미널로도 된다.
 
 ```bash
 ros2 service call /d6_ik_branches/solve std_srvs/srv/Trigger
+ros2 service call /d6_ik_branches/reveal std_srvs/srv/SetBool "{data: true}"
+ros2 service call /d6_ik_branches/show_valid std_srvs/srv/SetBool "{data: false}"
+ros2 service call /d1_manipulability/show std_srvs/srv/SetBool "{data: false}"
 ros2 run piper_lecture_demo d3_obstacle.py spawn
 ros2 run piper_lecture_demo d1_goto.py elbow
 ```
@@ -179,8 +231,12 @@ ros2 run piper_lecture_demo d1_goto.py elbow
 > Marker 로 남기고 직선에서의 최대 이탈(0.0397 m vs 0.0000 m)을 숫자로 낸다.
 
 ```bash
-ros2 launch piper_lecture_demo d5_interp_compare.launch.py
+ros2 run piper_lecture_demo d5_interp_compare
 ```
+
+> ⚠ 기동할 때 `No kinematics plugins defined` 경고가 **한 줄** 뜬다. 이 노드가 자기 쪽에도
+> 로봇 모델을 들고 있어야 해서 그렇고, **결과에는 영향이 없다** — `fraction = 0.627` ·
+> 실제 이동 `0.1569 m` 로 런치로 파라미터를 넘겨주던 때와 소수점까지 같다. 확인했다.
 
 **③ 충돌 환경을 준다 (M4-2)**
 
@@ -211,18 +267,50 @@ std_srvs/srv/Trigger`). 노드는 상주하므로 **팔을 옮기고 또 누르�
 
 지금 팔이 있는 자리의 손끝 자세를 목표로 잡고, 그 자세를 만드는 관절값을 **전부** 찾는다.
 찾는 방법은 강의에서 다룬 반복식 그대로다 — `q ← q + J⁺(x_target − f(q))` 를 무작위
-초기값 400개에서 돌리고 수렴한 것을 모아 중복을 지운다 (DLS 감쇠).
+초기값에서 돌리고 수렴한 것을 모아 중복을 지운다 (DLS 감쇠).
 
 rviz 의 Trajectory 디스플레이 둘이 결과를 받는다. **Show Trail 이 켜져 있어 여러 자세가
 한 화면에 겹쳐 보인다.**
 
-| 디스플레이 | 토픽 | 색 | 기본 |
+| 디스플레이 | 토픽 | 색 | 언제 보이나 |
 |---|---|---|---|
-| IK solutions (within limits) | `/ik_branches/valid` | 초록 | 켜짐 |
-| IK solutions (out of limits) | `/ik_branches/invalid` | 빨강 | **꺼짐** |
+| IK solutions (within limits) | `/ik_branches/valid` | 초록 | 풀면 바로. **「쓸 수 있는 해 감추기」 로 끈다** |
+| IK solutions (out of limits) | `/ik_branches/invalid` | 빨강 | **「나머지 해 보이기」 를 누르면** |
 
-빨강을 꺼 두었다. *"해가 몇 개일까?"* 를 묻고 초록 하나를 보인 뒤, **빨강을 켜서 나머지
-일곱을 한꺼번에 드러내는 것**이 이 데모의 장치다.
+둘 다 **MarkerArray** 다. 해 하나가 로봇 한 벌이고, 링크마다 메시 Marker 를 제자리에
+놓는다 (`kinematics.Visuals` 가 URDF 에서 링크별 메시와 트리를 읽는다).
+
+**두 디스플레이 다 rviz 에서는 켜 두었다.** 빨강을 감추는 것은 노드가 빈 메시지를
+내는 것으로 한다 — 강의 중에 체크박스를 마우스로 찾지 않고 버튼 하나로 연출이 되게.
+
+*"해가 몇 개일까?"* 를 묻고 초록 하나를 보인 뒤 **나머지 일곱을 한꺼번에 드러내는
+것**이 이 데모의 장치다. 드러낼 때 다시 풀지 않고 이미 찾아둔 것을 내보내므로 즉시 뜬다.
+
+> ⚠ **초록 하나는 「지금 로봇이 있는 그 자세」다.** 진짜 로봇과 정확히 겹쳐 그려지므로
+> 초록만으로는 화면에 변화가 없다 — 눈으로 볼 것은 터미널의 개수와, 이어서 드러낼
+> 빨강 쪽이다. 「눌렀는데 아무 일도 안 일어난다」의 정체가 이것이다.
+
+**빈 화면에서 시작하고 싶으면** 초록도 끈다. 셋(초록 · 빨강 · 타원체)을 다 끄면 팔만
+남으므로, 거기서 하나씩 얹으며 진행할 수 있다.
+
+```bash
+ros2 launch piper_lecture_demo d1_manipulability.launch.py ik_valid:=false ellipsoid:=false
+```
+
+| 누르는 차례 | 화면 |
+|---|---|
+| (시작) | 팔만 |
+| **쓸 수 있는 해 보이기** | 초록 하나 — 그런데 팔과 겹쳐서 티가 안 난다. *"해가 몇 개일까?"* |
+| **나머지 해 보이기** | 빨강 일곱이 한꺼번에 — *"기구학적으로는 여덟인데 쓸 수 있는 건 하나"* |
+| **타원체 보이기** | 왜 그 자세가 그런지로 넘어간다 |
+
+**자세를 옮기면 빨강은 다시 감춰진다.** 프리셋으로 팔을 옮기고 다시 풀면 초록만 남으므로,
+드러내는 장치가 자세마다 되감긴다. 초록은 건드리지 않는다 — 그쪽은 연출이 아니라
+보기 설정이라 한 번 정하면 유지된다.
+
+세 상태는 각각 `/d6_ik_branches/shown_valid` · `/d6_ik_branches/revealed` ·
+`/d1_manipulability/shown` 에 래치돼 있고 패널이 구독한다. **터미널로 바꿔도 버튼 라벨이
+실제 상태를 따라온다.**
 
 터미널에는 한계를 벗어난 관절이 도 단위로 찍힌다.
 
@@ -231,6 +319,36 @@ rviz 의 Trajectory 디스플레이 둘이 결과를 받는다. **Show Trail 이
   [쓸 수 있다] [0.3, 1.2, -1.0, 0.3, 0.6, -0.0]
   [한계 밖]   [0.3, 2.87, 1.621, 0.303, 2.55, 0.504]
               joint3=+93deg(한계 -170~+0) · joint5=+146deg(한계 -70~+70)
+```
+
+#### 탐색을 왜 줄였나 — 400 시드는 낭비였다
+
+한때 시드 400개를 끝까지 돌려 **23.5 초**가 걸렸다. 강의 중에 버튼 하나가 그만큼
+물려 있으면 못 쓴다. 재보니 시간이 두 군데로 새고 있었다.
+
+| | |
+|---|---|
+| 수렴 판정 | `break` 기준이 `1e-11` 인데 채택 기준은 `1e-6` 이라 **사실상 걸리지 않았다.** 이미 수렴한 시드도 250 회를 다 돌았다 |
+| 헛도는 시드 | 400개 중 **118개는 끝내 수렴하지 못하는데도** 250 회를 꽉 채웠다 |
+
+수렴 기준을 `1e-9` 로 올리고, 60 회까지 오차가 `1e-3` 밖이면 접는다. 그리고 시드를
+줄였다. **관절 한계 안에서 뽑은 무작위 6 자세로 대조한 결과:**
+
+| | 해집합 | 시간 |
+|---|---|---|
+| 400 시드 · 안 접음 (예전) | 기준 | 4.2 ~ **41.6** 초 |
+| 40 시드 · 접음 | **6 자세 전부 동일** | 0.4 ~ 3.8 초 |
+
+**해를 하나도 잃지 않는다.** 40개면 400개가 찾는 것을 다 찾는다 — 해가 8개뿐이라
+시드를 더 뿌려도 같은 것을 다시 찾을 뿐이다.
+
+기본값은 여유를 둬 `seeds = 80` 으로 두고, **시간으로도 끊는다** (`time_budget = 3.0`).
+특이점 근처는 시드 하나가 250 회를 다 쓰기도 해서 개수만으로는 상한이 안 잡힌다.
+로그에 실제로 몇 개를 썼는지 찍는다 — `시드 43/80 개 · 3.1 초`.
+
+```bash
+ros2 param set /d6_ik_branches seeds 200        # 더 뒤지고 싶으면
+ros2 param set /d6_ik_branches time_budget 0.0  # 0 이면 시간 제한 없음
 ```
 
 **여기서 말할 것 두 가지.**
@@ -296,8 +414,8 @@ ros2 launch piper_lecture_demo d1_manipulability.launch.py readout:=marker
 둘 다 자기 입력에는 충실하므로 어느 쪽도 에러를 내지 않는다.
 
 흔한 원인은 **앞서 띄운 데모가 아직 살아 있는 것**이다. MoveIt 스택의
-`joint_state_broadcaster`, `d2_workspace.launch.py` 의 `joint_state_publisher`,
-먼저 띄운 D1 의 슬라이더 GUI 가 모두 `/joint_states` 를 발행한다.
+`joint_state_broadcaster` 와 먼저 띄운 D1 의 슬라이더 GUI 가 모두 `/joint_states` 를
+발행한다. **두 스택을 같이 띄우면 반드시 이렇게 된다.**
 
 D1 은 이것을 감시해서 경고한다:
 
@@ -314,6 +432,54 @@ pkill -f joint_state_publisher              # 남은 것 정리
 
 > 이것은 버그가 아니라 이 레포의 성질이다. `/joint_states` 가 **명령 토픽**이라
 > 아무나 쓸 수 있고, 마지막에 쓴 쪽이 이긴다 — 강의 M6-1 이 다루는 바로 그 사실이다.
+
+## D6 을 왜 Marker 로 그리나 — MoveIt 디스플레이는 SRDF 를 요구한다
+
+처음에는 MoveIt 의 **Trajectory 디스플레이**로 그렸다. 해 목록을 궤적처럼 담아 보내면
+`Show Trail` 이 모든 자세를 한 화면에 세워 주기 때문이다. 그런데 그 디스플레이는
+로봇 모델을 **URDF 와 SRDF 둘 다**로 만든다. D1 스택에는 `robot_description` 만 있고
+`robot_description_semantic` 이 없으므로 이렇게 죽는다.
+
+```
+Could not find parameter robot_description_semantic and did not receive
+robot_description_semantic via std_msgs::msg::String subscription within 10.000000 seconds.
+[moveit_rdf_loader.rdf_loader]: Unable to parse SRDF
+```
+
+디스플레이에 빨간 오류 표시만 남고 **아무것도 그려지지 않는다.**
+
+그래서 링크 메시를 Marker 로 직접 놓는 쪽으로 바꿨다. 얻은 것이 셋이다.
+
+| | |
+|---|---|
+| **스택을 안 가린다** | D1 · MoveIt 어느 쪽에서도 같게 보인다. D6 이 MoveIt 을 아예 안 쓴다 |
+| **안 깜박인다** | 애니메이션이라는 것이 없다. 아래 「증상 둘」 참조 |
+| **색·투명도를 쥔다** | 초록/빨강과 알파를 노드가 정한다 (`alpha` 파라미터) |
+
+> ⚠ **DELETEALL 마커에 `ns` 를 넣지 말 것.** 지우기는 원래 네임스페이스를 가리지 않는데
+> `ns` 를 채우면 rviz 가 디스플레이를 **오류 상태로 표시한다.** 그런데 **그리기는 정상으로
+> 되기 때문에** 화면만 보고는 원인을 찾을 수 없다 — 트리의 아이콘만 빨갛다.
+> 마커를 하나씩 빼며 확인한 결과다 (`ns` 를 비우면 아이콘이 깨끗해진다).
+
+## 증상 둘 — 「로봇이 계속 깜박거린다」
+
+MoveIt 의 **Trajectory 디스플레이가 궤적을 계속 재생**하기 때문이다. D6 가 내는 것은
+궤적 모양을 하고 있을 뿐 실제로는 해 목록인데, 디스플레이는 그것을 애니메이션으로
+돌린다. `Loop Animation` 이 켜져 있으면 끝나고 다시 처음부터 돌아 **유령 로봇이
+나타났다 사라졌다** 한다. 해가 하나뿐이어도 그 하나가 깜박인다.
+
+화면을 연속 캡처해 프레임 간 변화를 재보면 분명하다 (rviz 3D 영역, 0.15 초 간격).
+
+| | 바뀌는 화소 |
+|---|---|
+| `Loop Animation: true` | 매 프레임 **6.05 %** — 정확히 두 상태를 오간다 |
+| `Loop Animation: false` | **0.00 %** — 완전히 정지 |
+
+**지금은 이 문제가 없다.** IK 해를 Marker 로 그리면서 애니메이션이라는 것 자체가
+사라졌다 (위 절). 같은 방법으로 다시 재면 **0.00 %** 다.
+
+남아 있는 Trajectory 디스플레이는 MoveIt 스택의 `MotionPlanning`(계획된 경로) 하나뿐이고,
+그쪽은 **재생되는 것이 맞다** — 계획한 궤적을 보여주는 것이 일이기 때문이다.
 
 ## ⚠ 실물을 연결한 채로 띄우지 말 것
 
@@ -707,6 +873,26 @@ D1 은 이 점을 **`tcp` 프레임**으로도 내보낸다 (`link6` 의 자식)
 않지만, 학생이 PTP/LIN 을 쓰려 하면 여기서 막힌다. 가속도 한계를 채운
 `joint_limits.yaml` 을 주면 PTP·LIN 모두 정상 동작하는 것까지 확인했다.
 
+### `joint8` 이 `ros2_control` 에 빠져 있다
+
+`move_group` 이 **1 초에 한 번씩** 이 경고를 낸다. 강의 내내 터미널이 이것으로 덮인다.
+
+```
+The complete state of the robot is not yet known.  Missing joint8
+```
+
+URDF 에는 `joint8`(그리퍼의 반대쪽 손가락)이 **`<mimic>` 없는 독립 prismatic 관절**로
+들어 있는데, `piper.ros2_control.xacro` 는 `joint1` ~ `joint7` 만 등록한다. 그래서
+`joint_state_broadcaster` 가 7 개만 내보내고, 8 관절 모델을 들고 있는 `move_group` 은
+상태가 영영 채워지지 않는다. 계획은 되지만 경고가 멈추지 않고 `link8` 은 추종되지 않는다.
+
+**고치면 없어지는 것까지 확인했다.** `piper.ros2_control.xacro` 에 `joint8` 블록을
+(`joint7` 것과 같은 모양으로) 더하고 `initial_positions.yaml` 에 `joint8: 0` 을 넣으면,
+`/joint_states` 에 `joint8` 이 나오고 경고는 **0 건**이 된다.
+
+⚠ 다만 그것은 **piper 설정을 고치는 일**이다. 이 패키지는 piper 설정을 하나도 덮지
+않는다는 원칙이라(아래 절) 여기서는 고치지 않고 적어만 둔다.
+
 ### `ompl_planning.yaml` 이 없다
 
 그룹별 플래너 설정이 비어 있어 `setPlannerId("RRTConnectkConfigDefault")` 같은 지정이
@@ -736,14 +922,11 @@ piper_lecture_demo/
 │   └── lecture_panel.py               강의용 버튼 창 (PyQt5)
 ├── src/
 │   └── d5_interp_compare.cpp          D5
-├── launch/
-│   ├── moveit_demo.launch.py          piper 런치 + 우리 rviz 설정 + D6 + 패널
-│   ├── d1_manipulability.launch.py
-│   ├── d2_workspace.launch.py
-│   └── d5_interp_compare.launch.py
+├── launch/                            스택이 둘이라 런치도 둘이다
+│   ├── d1_manipulability.launch.py    D1 · D2 · D6 + 패널 (URDF 만)
+│   └── moveit_demo.launch.py          piper 런치 + 우리 rviz 설정 + D6 + 패널
 └── config/
-    ├── d1_manipulability.rviz
-    ├── d2_workspace.rviz
+    ├── d1_manipulability.rviz         타원체 · 숫자판 · IK 해 · 작업영역
     └── moveit_demo.rviz               piper 의 moveit.rviz + Marker 디스플레이
                                        (piper 런치에 rviz_config 로 넘긴다)
 ```
