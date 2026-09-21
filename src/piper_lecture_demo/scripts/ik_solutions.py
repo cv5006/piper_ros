@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""D6 — 같은 손끝 자세를 만드는 해가 여럿이다. 그런데 쓸 수 있는 것은 하나다. (M2 · M3-2)
+"""같은 손끝 자세를 만드는 해가 여럿이다. 그런데 쓸 수 있는 것은 하나다. (M2 · M3-2)
 
 팔이 있는 자리의 손끝 자세를 목표로 잡고, 그 자세를 만드는 관절값을 전부 찾는다.
 찾는 방법은 강의에서 다룬 그대로다 — q <- q + J⁺(x_target - f(q)) 를 무작위 초기값에서
@@ -7,18 +7,18 @@
 
 상주하면서 부를 때마다 다시 푼다. 팔을 옮기고 또 누르면 그 자리에서 다시 찾는다.
 
-    ros2 run piper_lecture_demo d6_ik_branches.py          # 뜨면 한 번 풀고 대기
-    ros2 service call /d6_ik_branches/solve std_srvs/srv/Trigger
-    (또는 강의 패널의 「IK 해 찾기」 버튼)
+    ros2 run piper_lecture_demo ik_solutions.py          # 뜨면 한 번 풀고 대기
+    ros2 service call /ik_solutions/solve std_srvs/srv/Trigger
+    (또는 강의 패널의 「Solve IK」 버튼)
 
 두 토픽으로 낸다. rviz 의 **MarkerArray** 디스플레이 둘이 각각 받는다.
 해 하나가 로봇 한 벌이고, 링크마다 메시 Marker 를 제자리에 놓는다.
 
-    /ik_branches/valid     관절 한계 안에 드는 해   (초록)
-    /ik_branches/invalid   한계 밖으로 밀려난 해     (빨강)
+    /ik_solutions/valid     관절 한계 안에 드는 해   (초록)
+    /ik_solutions/invalid   한계 밖으로 밀려난 해     (빨강)
 
 **MoveIt 을 쓰지 않는다.** 한때 MoveIt 의 Trajectory 디스플레이로 그렸는데 그것이
-SRDF 를 요구해서 D1 스택(URDF 만 있는 스택)에서는 뜨지 못했다 —
+SRDF 를 요구해서 URDF 스택(robot_description 만 있는 스택)에서는 뜨지 못했다 —
 `Unable to parse SRDF` 가 나고 디스플레이에 빨간 오류 표시만 남는다.
 메시를 직접 놓으면 rviz 기본 플러그인만으로 되고, **두 스택 어디서든 같게 보인다.**
 덤으로 애니메이션이 없어 화면이 깜박이지 않는다.
@@ -26,14 +26,14 @@ SRDF 를 요구해서 D1 스택(URDF 만 있는 스택)에서는 뜨지 못했�
 **빨강은 풀자마자 내지 않는다.** 디스플레이는 rviz 에서 켜져 있지만 이 노드가
 빈 메시지를 내고 있어서 화면에는 아무것도 없다. 한 번 더 부르면 그때 낸다.
 
-    ros2 service call /d6_ik_branches/reveal std_srvs/srv/SetBool "{data: true}"
-    (또는 강의 패널의 「나머지 해 보이기」 버튼)
+    ros2 service call /ik_solutions/reveal std_srvs/srv/SetBool "{data: true}"
+    (또는 강의 패널의 「Show remaining solutions」 버튼)
 
 초록도 같은 식으로 끈다. 아무것도 없는 화면에서 시작해 초록 하나를 보이고, 그 다음
 빨강 일곱을 드러내는 진행을 만들 수 있다.
 
-    ros2 service call /d6_ik_branches/show_valid std_srvs/srv/SetBool "{data: false}"
-    (또는 강의 패널의 「쓸 수 있는 해 감추기」 버튼)
+    ros2 service call /ik_solutions/show_valid std_srvs/srv/SetBool "{data: false}"
+    (또는 강의 패널의 「Hide usable solutions」 버튼)
 
 *"해가 몇 개일까?"* 를 묻고 초록 하나를 보인 뒤 나머지 일곱을 한꺼번에 드러내는
 것이 이 데모의 장치다. 다시 풀지 않고 이미 찾아둔 것을 내보내므로 즉시 뜬다.
@@ -127,7 +127,7 @@ def wrap(q):
 class IkBranches(Node):
 
     def __init__(self):
-        super().__init__("d6_ik_branches")
+        super().__init__("ik_solutions")
         default_urdf = (get_package_share_directory("piper_description")
                         + "/urdf/piper_description.urdf")
         self.declare_parameter("urdf", default_urdf)
@@ -135,9 +135,9 @@ class IkBranches(Node):
         self.declare_parameter("time_budget", 3.0)   # 넘으면 시드를 더 쓰지 않는다
         self.declare_parameter("frame", "base_link")   # 마커를 놓을 좌표계
         self.declare_parameter("alpha", 0.55)          # 유령 로봇의 불투명도
-        # 초록(쓸 수 있는 해)을 처음부터 감춘 채 띄우고 싶을 때. 아무것도 없는
-        # 화면에서 시작해 초록 -> 빨강 순으로 드러내는 진행을 위한 것이다.
-        self.declare_parameter("show_valid", True)
+        # **기본은 감추기다.** 아무것도 없는 화면에서 시작해 초록 -> 빨강 순으로
+        # 드러내는 진행이 이 데모의 장치다.
+        self.declare_parameter("show_valid", False)
         self.declare_parameter("solve_on_start", True)
         # 목표를 어디서 잡나. 6개가 아니면 /joint_states 의 지금 자세를 쓴다.
         # (빈 리스트를 기본값으로 두면 rclpy 가 BYTE_ARRAY 로 추론해 버린다)
@@ -155,8 +155,8 @@ class IkBranches(Node):
 
         qos = QoSProfile(depth=1, reliability=ReliabilityPolicy.RELIABLE,
                          durability=DurabilityPolicy.TRANSIENT_LOCAL)
-        self.pub_valid = self.create_publisher(MarkerArray, "/ik_branches/valid", qos)
-        self.pub_invalid = self.create_publisher(MarkerArray, "/ik_branches/invalid", qos)
+        self.pub_valid = self.create_publisher(MarkerArray, "/ik_solutions/valid", qos)
+        self.pub_invalid = self.create_publisher(MarkerArray, "/ik_solutions/invalid", qos)
         self.create_subscription(JointState, "/joint_states", self.on_joints, 10)
         self.srv = self.create_service(Trigger, "~/solve", self.on_solve)
         self.srv_reveal = self.create_service(SetBool, "~/reveal", self.on_reveal)
@@ -171,9 +171,9 @@ class IkBranches(Node):
         q_param = list(self.get_parameter("q").value)
         self.fixed_q = np.array(q_param, dtype=float) if len(q_param) == 6 else None
 
-        self.get_logger().info("상주한다. 다시 풀려면:")
-        self.get_logger().info("  ros2 service call /d6_ik_branches/solve std_srvs/srv/Trigger")
-        self.get_logger().info("  (또는 강의 패널의 「IK 해 찾기」 버튼)")
+        self.get_logger().info("staying up. to solve again:")
+        self.get_logger().info("  ros2 service call /ik_solutions/solve std_srvs/srv/Trigger")
+        self.get_logger().info('  (or the "Solve IK" button on the lecture panel)')
 
     # ------------------------------------------------------------------ 입력
 
@@ -195,11 +195,11 @@ class IkBranches(Node):
         q = self.target()
         if q is None:
             res.success = False
-            res.message = "/joint_states 를 아직 못 받았다"
+            res.message = "no /joint_states received yet"
             return res
         n_all, n_valid = self.run(q)
         res.success = True
-        res.message = f"해 {n_all} 개 / 관절 한계 안 {n_valid} 개"
+        res.message = f"{n_all} solutions / {n_valid} within joint limits"
         return res
 
     def announce(self):
@@ -212,11 +212,12 @@ class IkBranches(Node):
         self.announce()
         res.success = True
         if self.q_ref is None:
-            res.message = "아직 푼 것이 없다. 먼저 「IK 해 찾기」"
+            res.message = 'nothing solved yet. press "Solve IK" first'
             return res
         self.pub_valid.publish(
             self.to_markers(self.valid if self.show_valid else [], "ik_valid", VALID_RGB))
-        res.message = "쓸 수 있는 해를 낸다" if self.show_valid else "쓸 수 있는 해를 감춘다"
+        res.message = ("showing usable solutions" if self.show_valid
+                       else "hiding usable solutions")
         return res
 
     def on_reveal(self, req, res):
@@ -226,16 +227,16 @@ class IkBranches(Node):
         self.announce()
         res.success = True
         if self.q_ref is None:
-            res.message = "아직 푼 것이 없다. 먼저 「IK 해 찾기」"
+            res.message = 'nothing solved yet. press "Solve IK" first'
             return res
         self.pub_invalid.publish(
             self.to_markers(self.invalid if self.reveal else [], "ik_invalid", INVALID_RGB))
         if not self.invalid:
-            res.message = "한계 밖 해가 없다"
+            res.message = "there are no out-of-limit solutions"
         elif self.reveal:
-            res.message = f"한계 밖 해 {len(self.invalid)} 개를 낸다"
+            res.message = f"showing {len(self.invalid)} out-of-limit solutions"
         else:
-            res.message = "한계 밖 해를 감춘다"
+            res.message = "hiding out-of-limit solutions"
         return res
 
     # ------------------------------------------------------------------ 본체
@@ -249,18 +250,19 @@ class IkBranches(Node):
         Td = self.chain.fk(q_ref)
         self.get_logger().info("")
         self.get_logger().info(
-            f"목표: 지금 자세의 손끝. 위치 {np.round(Td[:3, 3], 4).tolist()}")
+            f"target: the TCP of the current pose. position {np.round(Td[:3, 3], 4).tolist()}")
 
         # 목표가 특이점이면 해가 낱개가 아니라 연속체가 된다 (손목 특이점에서는
         # joint4 와 joint6 의 합만 정해지고 각각은 자유롭다). 그때는 「몇 개」가 뜻이 없다.
         s6 = np.linalg.svd(self.chain.jacobian(q_ref), compute_uv=False)
         if s6[-1] < 1e-3:
             self.get_logger().warn(
-                f"이 자세는 특이점이다 (6자유도 sigma_min = {s6[-1]:.2e}). "
-                "해가 낱개가 아니라 연속체라 개수는 뜻이 없다")
+                f"this pose is singular (6-DOF sigma_min = {s6[-1]:.2e}). "
+                "the solutions form a continuum rather than discrete branches, "
+                "so counting them is meaningless")
             self.get_logger().warn(
-                "  팔을 특이점에서 떼어놓고 다시 실행할 것 — MoveIt 스택의 기본 자세(영자세)가 "
-                "바로 손목 특이점이다")
+                "  move the arm off the singularity and run again - the MoveIt stack's "
+                "default pose (all joints zero) IS the wrist singularity")
 
         seeds = int(self.get_parameter("seeds").value)
         budget = float(self.get_parameter("time_budget").value)
@@ -292,10 +294,11 @@ class IkBranches(Node):
         self.valid, self.invalid = valid, invalid
         self.report(valid, invalid, lo, hi)
         self.get_logger().info(
-            f"시드 {used}/{seeds} 개 · {time.monotonic() - t0:.1f} 초")
+            f"seeds {used}/{seeds} · {time.monotonic() - t0:.1f} s")
         if invalid and not self.reveal:
             self.get_logger().info(
-                "한계 밖 해는 아직 화면에 내지 않았다 — 패널의 「나머지 해 보이기」")
+                'out-of-limit solutions are not on screen yet - '
+                'use "Show remaining solutions" on the panel')
 
         self.announce()
         self.pub_valid.publish(
@@ -308,16 +311,16 @@ class IkBranches(Node):
 
     def report(self, valid, invalid, lo, hi):
         self.get_logger().info(
-            f"찾은 해 {len(valid) + len(invalid)} 개 — "
-            f"관절 한계 안 {len(valid)} 개 / 밖 {len(invalid)} 개")
+            f"found {len(valid) + len(invalid)} solutions - "
+            f"{len(valid)} within joint limits / {len(invalid)} outside")
         for s in valid:
-            mark = "  <- 지금 자세" if np.max(np.abs(s - self.q_ref)) < 1e-6 else ""
-            self.get_logger().info(f"  [쓸 수 있다] {np.round(s, 3).tolist()}{mark}")
+            mark = "  <- current pose" if np.max(np.abs(s - self.q_ref)) < 1e-6 else ""
+            self.get_logger().info(f"  [usable]       {np.round(s, 3).tolist()}{mark}")
         for s in invalid:
             bad = [f"joint{k + 1}={np.degrees(s[k]):+.0f}deg"
-                   f"(한계 {np.degrees(lo[k]):+.0f}~{np.degrees(hi[k]):+.0f})"
+                   f"(limit {np.degrees(lo[k]):+.0f}~{np.degrees(hi[k]):+.0f})"
                    for k in range(6) if s[k] < lo[k] - 1e-6 or s[k] > hi[k] + 1e-6]
-            self.get_logger().info(f"  [한계 밖]   {np.round(s, 3).tolist()}")
+            self.get_logger().info(f"  [out of limit] {np.round(s, 3).tolist()}")
             self.get_logger().info(f"              {' · '.join(bad)}")
 
     def to_markers(self, sols, ns, rgb):

@@ -1,4 +1,4 @@
-// D5 — 같은 두 자세, 두 경로. (M4-1)
+// 같은 두 자세, 두 경로 — 관절 보간과 손끝 직선. (M4-1)
 //
 // 슬라이드는 관절 공간과 작업 공간에 각각 직선을 그려놓고 질문만 던진다.
 // 그 답이 여기 있다: 두 직선은 같은 동작이 아니다.
@@ -9,9 +9,9 @@
 //
 // 플래너는 OMPL 하나만 쓴다. 직선은 플래너가 아니라 MoveIt 의 카테시안 보간이 만든다.
 //
-//   ros2 run piper_lecture_demo d5_interp_compare
+//   ros2 run piper_lecture_demo path_compare
 //
-// MoveIt 스택(moveit_demo.launch.py)을 먼저 띄워 둘 것. 기동할 때
+// MoveIt 스택(moveit_demos.launch.py)을 먼저 띄워 둘 것. 기동할 때
 // 'No kinematics plugins defined' 경고가 한 줄 뜨는데 결과에는 영향이 없다 —
 // 이 노드가 자기 쪽에도 로봇 모델을 들고 있어야 해서 나는 소리다.
 
@@ -47,7 +47,7 @@ const std::vector<double> kStretchedQ = { 0.0, 1.70, -1.38, 0.0, 0.5, 0.0 };
 
 void pause_for(const rclcpp::Logger& log, const char* what, int seconds)
 {
-  RCLCPP_INFO(log, "  --- %s (%d초 대기) ---", what, seconds);
+  RCLCPP_INFO(log, "  --- %s (waiting %d s) ---", what, seconds);
   std::this_thread::sleep_for(std::chrono::seconds(seconds));
 }
 
@@ -79,12 +79,12 @@ bool moveToJoints(MoveGroupInterface& arm, const std::vector<double>& q,
   arm.setJointValueTarget(q);
   if (arm.plan(plan) != moveit::core::MoveItErrorCode::SUCCESS)
   {
-    RCLCPP_ERROR(log, "    [%s] 관절 목표 계획 실패 — 이후 결과를 믿지 말 것", label);
+    RCLCPP_ERROR(log, "    [%s] planning to the joint goal failed - do not trust what follows", label);
     return false;
   }
   if (arm.execute(plan) != moveit::core::MoveItErrorCode::SUCCESS)
   {
-    RCLCPP_ERROR(log, "    [%s] 실행 실패", label);
+    RCLCPP_ERROR(log, "    [%s] execution failed", label);
     return false;
   }
   return true;
@@ -130,7 +130,7 @@ int main(int argc, char** argv)
   rclcpp::init(argc, argv);
   rclcpp::NodeOptions options;
   options.automatically_declare_parameters_from_overrides(true);
-  auto node = rclcpp::Node::make_shared("d5_interp_compare", options);
+  auto node = rclcpp::Node::make_shared("path_compare", options);
   const auto log = node->get_logger();
 
   rclcpp::executors::SingleThreadedExecutor executor;
@@ -140,7 +140,7 @@ int main(int argc, char** argv)
   MoveGroupInterface arm(node, kGroup);
   PlanningSceneInterface scene;
 
-  // D3 가 세워둔 기둥이 남아 있으면 이 데모의 자세가 막힌다. 먼저 치운다.
+  // obstacle 데모가 세워둔 기둥이 남아 있으면 이 데모의 자세가 막힌다. 먼저 치운다.
   {
     std::vector<std::string> stale;
     for (const auto& name : scene.getKnownObjectNames())
@@ -152,7 +152,7 @@ int main(int argc, char** argv)
     }
     if (!stale.empty())
     {
-      RCLCPP_INFO(log, "다른 데모가 남긴 물체 %zu 개를 치운다", stale.size());
+      RCLCPP_INFO(log, "removing %zu object(s) left behind by another demo", stale.size());
       scene.removeCollisionObjects(stale);
       std::this_thread::sleep_for(1s);
     }
@@ -199,15 +199,15 @@ int main(int argc, char** argv)
   };
 
   RCLCPP_INFO(log, "=========================================================");
-  RCLCPP_INFO(log, " D5 — 같은 두 자세를 잇는 두 경로. 둘 다 「직선」이었다");
+  RCLCPP_INFO(log, " path_compare - two paths between the same two poses. both were called a straight line");
   RCLCPP_INFO(log, "=========================================================");
 
   // ---------------------------------------------------------------- 시작 자세
-  RCLCPP_INFO(log, "[0] 시작 자세로 보낸다");
+  RCLCPP_INFO(log, "[0] moving to the start pose");
   MoveGroupInterface::Plan plan;
-  if (!moveToJoints(arm, kStartQ, log, "시작"))
+  if (!moveToJoints(arm, kStartQ, log, "start"))
   {
-    RCLCPP_ERROR(log, "move_group 이 떠 있는지, planning scene 이 비어 있는지 확인할 것");
+    RCLCPP_ERROR(log, "check that move_group is up and the planning scene is empty");
     rclcpp::shutdown();
     spinner.join();
     return 1;
@@ -218,50 +218,50 @@ int main(int argc, char** argv)
   goal.position.y += 0.22;
   goal.position.z -= 0.12;
 
-  RCLCPP_INFO(log, "    시작 [%.3f %.3f %.3f]  ->  목표 [%.3f %.3f %.3f]",
+  RCLCPP_INFO(log, "    start [%.3f %.3f %.3f]  ->  goal [%.3f %.3f %.3f]",
               start_pose.position.x, start_pose.position.y, start_pose.position.z,
               goal.position.x, goal.position.y, goal.position.z);
   const double straight = std::hypot(goal.position.y - start_pose.position.y,
                                      goal.position.z - start_pose.position.z);
-  RCLCPP_INFO(log, "    두 점 사이 직선 거리 = %.4f m", straight);
+  RCLCPP_INFO(log, "    straight-line distance between the two points = %.4f m", straight);
 
   // ------------------------------------------------ ① 관절 공간에서 이은 길
-  pause_for(log, "① 관절 보간 — 관절 공간에서 길을 찾는다 (OMPL)", 2);
+  pause_for(log, "[1] joint interpolation - a path found in joint space (OMPL)", 2);
   arm.setPoseTarget(goal);
   std::vector<Eigen::Vector3d> trace_joint;
   if (arm.plan(plan) == moveit::core::MoveItErrorCode::SUCCESS)
   {
     trace_joint = traceOf(plan.trajectory_, model, kGroup, tip);
-    RCLCPP_INFO(log, "    경유점 %zu 개", trace_joint.size());
-    RCLCPP_INFO(log, "    손끝 이동거리 = %.4f m  (직선 대비 %.1f%%)",
+    RCLCPP_INFO(log, "    %zu waypoints", trace_joint.size());
+    RCLCPP_INFO(log, "    TCP path length = %.4f m  (%.1f%% of the straight line)",
                 pathLength(trace_joint), 100.0 * pathLength(trace_joint) / straight);
-    RCLCPP_INFO(log, "    직선에서 최대 이탈 = %.4f m", maxDeviation(trace_joint));
-    arr.markers.push_back(lineMarker(0, trace_joint, 0.95, 0.55, 0.15, "d5_joint"));
+    RCLCPP_INFO(log, "    max deviation from the straight line = %.4f m", maxDeviation(trace_joint));
+    arr.markers.push_back(lineMarker(0, trace_joint, 0.95, 0.55, 0.15, "joint_interp"));
     marker_pub->publish(arr);
     arm.execute(plan);
   }
   else
   {
-    RCLCPP_WARN(log, "    계획 실패");
+    RCLCPP_WARN(log, "    planning failed");
   }
 
   // ------------------------------------------------ ② 작업 공간에서 이은 직선
-  pause_for(log, "② 손끝 직선 — 작업 공간에서 곧게 잇는다 (computeCartesianPath)", 2);
-  moveToJoints(arm, kStartQ, log, "시작 복귀");
+  pause_for(log, "[2] straight TCP line - joined straight in task space (computeCartesianPath)", 2);
+  moveToJoints(arm, kStartQ, log, "return to start");
 
   std::vector<geometry_msgs::msg::Pose> waypoints = { goal };
   moveit_msgs::msg::RobotTrajectory cartesian;
   const double fraction = arm.computeCartesianPath(waypoints, 0.005, 0.0, cartesian);
   const auto trace_cart = traceOf(cartesian, model, kGroup, tip);
 
-  RCLCPP_INFO(log, "    fraction = %.3f  (요구한 직선의 %.1f%% 를 갔다)", fraction, fraction * 100.0);
+  RCLCPP_INFO(log, "    fraction = %.3f  (covered %.1f%% of the requested line)", fraction, fraction * 100.0);
   if (!trace_cart.empty())
   {
-    RCLCPP_INFO(log, "    경유점 %zu 개", trace_cart.size());
-    RCLCPP_INFO(log, "    손끝 이동거리 = %.4f m", pathLength(trace_cart));
-    RCLCPP_INFO(log, "    직선에서 최대 이탈 = %.4f m  <- ① 과 비교할 것",
+    RCLCPP_INFO(log, "    %zu waypoints", trace_cart.size());
+    RCLCPP_INFO(log, "    TCP path length = %.4f m", pathLength(trace_cart));
+    RCLCPP_INFO(log, "    max deviation from the straight line = %.4f m  <- compare with [1]",
                 maxDeviation(trace_cart));
-    arr.markers.push_back(lineMarker(1, trace_cart, 0.25, 0.60, 0.95, "d5_cartesian"));
+    arr.markers.push_back(lineMarker(1, trace_cart, 0.25, 0.60, 0.95, "cartesian_line"));
     marker_pub->publish(arr);
   }
   if (fraction > 0.99)
@@ -270,14 +270,14 @@ int main(int argc, char** argv)
   }
   else
   {
-    RCLCPP_WARN(log, "    직선을 다 못 갔다. 실행은 건너뛴다");
+    RCLCPP_WARN(log, "    could not cover the whole line. skipping execution");
   }
 
   // --------------------------------------- ③ 특이점 근처에서 같은 것을 요구하면
-  pause_for(log, "③ 작업영역 경계 쪽으로 직선을 요구한다", 2);
-  if (!moveToJoints(arm, kStretchedQ, log, "뻗은 자세"))
+  pause_for(log, "[3] asking for a straight line towards the workspace boundary", 2);
+  if (!moveToJoints(arm, kStretchedQ, log, "extended pose"))
   {
-    RCLCPP_ERROR(log, "    ③ 을 건너뛴다");
+    RCLCPP_ERROR(log, "    skipping [3]");
     rclcpp::shutdown();
     spinner.join();
     return 1;
@@ -287,7 +287,7 @@ int main(int argc, char** argv)
   auto far_goal = stretched_pose;
   far_goal.position.x += 0.25;   // 도달 한계 너머로 곧게 민다
 
-  RCLCPP_INFO(log, "    시작 [%.3f %.3f %.3f]  ->  목표 [%.3f %.3f %.3f]  (직선 %.3f m)",
+  RCLCPP_INFO(log, "    start [%.3f %.3f %.3f]  ->  goal [%.3f %.3f %.3f]  (line %.3f m)",
               stretched_pose.position.x, stretched_pose.position.y, stretched_pose.position.z,
               far_goal.position.x, far_goal.position.y, far_goal.position.z, 0.25);
 
@@ -296,19 +296,20 @@ int main(int argc, char** argv)
   const double far_fraction = arm.computeCartesianPath(far_waypoints, 0.005, 0.0, far_cartesian);
   const auto trace_far = traceOf(far_cartesian, model, kGroup, tip);
 
-  RCLCPP_INFO(log, "    fraction = %.3f  (요구한 직선의 %.1f%% 에서 멈췄다)",
+  RCLCPP_INFO(log, "    fraction = %.3f  (stopped at %.1f%% of the requested line)",
               far_fraction, far_fraction * 100.0);
   if (!trace_far.empty())
   {
     const double r0 = std::hypot(stretched_pose.position.x, stretched_pose.position.y);
     const double r1 = std::hypot(trace_far.back().x(), trace_far.back().y());
-    RCLCPP_INFO(log, "    실제로 간 거리 = %.4f m / 요구한 %.4f m",
+    RCLCPP_INFO(log, "    distance actually travelled = %.4f m / requested %.4f m",
                 pathLength(trace_far), 0.25);
-    RCLCPP_INFO(log, "    손끝 반경 %.3f m -> %.3f m 에서 멈췄다", r0, r1);
-    RCLCPP_INFO(log, "    ⚠ 위치만 따지면 이 팔은 반경 0.627 m 까지 간다 (URDF 로 계산).");
-    RCLCPP_INFO(log, "      그런데 %.3f m 에서 멈췄다. 직선 보간은 손끝 「방향」도 고정한 채", r1);
-    RCLCPP_INFO(log, "      가기 때문이다. 닿는 것과 원하는 자세로 닿는 것은 다르다 — M3.");
-    arr.markers.push_back(lineMarker(2, trace_far, 0.90, 0.25, 0.25, "d5_limit"));
+    RCLCPP_INFO(log, "    TCP radius %.3f m -> stopped at %.3f m", r0, r1);
+    RCLCPP_INFO(log, "    NOTE position alone, this arm reaches a radius of 0.627 m (from the URDF).");
+    RCLCPP_INFO(log, "      Yet it stopped at %.3f m, because Cartesian interpolation also holds", r1);
+    RCLCPP_INFO(log, "      the TCP orientation fixed. Reaching a point and reaching it in the"
+              " pose you want are different things - M3.");
+    arr.markers.push_back(lineMarker(2, trace_far, 0.90, 0.25, 0.25, "beyond_limit"));
     marker_pub->publish(arr);
   }
   if (far_fraction > 0.0)
@@ -317,9 +318,11 @@ int main(int argc, char** argv)
   }
 
   RCLCPP_INFO(log, " ");
-  RCLCPP_INFO(log, " 정리 — 관절 공간의 직선과 작업 공간의 직선은 다른 동작이다.");
-  RCLCPP_INFO(log, " 그리고 작업 공간의 직선은 언제나 갈 수 있는 것이 아니다.");
-  RCLCPP_INFO(log, " rviz 의 Marker 에서 주황(관절) · 파랑(직선) · 빨강(한계) 자취를 비교할 것.");
+  RCLCPP_INFO(log, " Summary - a straight line in joint space and one in task space are"
+              " different motions.");
+  RCLCPP_INFO(log, " And a straight line in task space is not always reachable.");
+  RCLCPP_INFO(log, " Compare the traces in the rviz Marker display: orange (joint),"
+              " blue (straight), red (limit).");
 
   rclcpp::shutdown();
   spinner.join();

@@ -154,7 +154,7 @@ Visualization Manager:
         Durability Policy: Transient Local
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /ik_branches/valid
+        Value: /ik_solutions/valid
       Value: true
     - Class: rviz_default_plugins/MarkerArray
       Name: IK solutions (out of limits)
@@ -166,10 +166,10 @@ Visualization Manager:
         Durability Policy: Transient Local
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /ik_branches/invalid
+        Value: /ik_solutions/invalid
       Value: true
     - Class: rviz_default_plugins/PointCloud2
-      Name: Workspace — reachable (D2)
+      Name: Workspace — reachable
       Enabled: true
       Topic:
         Depth: 1
@@ -184,7 +184,7 @@ Visualization Manager:
       Decay Time: 0
       Value: true
     - Class: rviz_default_plugins/PointCloud2
-      Name: Workspace — oriented (D2)
+      Name: Workspace — oriented
       Enabled: true
       Topic:
         Depth: 1

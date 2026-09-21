@@ -13,17 +13,19 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
   <buildtool_depend>ament_cmake_python</buildtool_depend>
 
-  <!-- D3 · D4 · D5 (MoveIt 을 얹는 데모) -->
+  <!-- MoveIt 을 얹는 데모 (obstacle · path_compare) -->
   <depend>rclcpp</depend>
   <depend>moveit_ros_planning_interface</depend>
   <depend>moveit_core</depend>
+  <depend>moveit_ros_planning</depend>      <!-- jacobian_check 의 RobotModelLoader -->
+  <depend>ament_index_cpp</depend>
   <depend>geometry_msgs</depend>
   <depend>visualization_msgs</depend>
   <depend>shape_msgs</depend>
   <depend>tf2_eigen</depend>
   <depend>tf2_geometry_msgs</depend>
 
-  <!-- D1 · D2 (URDF 만 읽는 도구. 런타임 의존은 rclpy + numpy 뿐) -->
+  <!-- URDF 만 읽는 도구 (manipulability · workspace · ik_solutions). 런타임 의존은 rclpy + numpy 뿐 -->
   <exec_depend>rclpy</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>control_msgs</exec_depend>          <!-- 실물 어댑터의 액션 -->
@@ -31,8 +33,11 @@
   <exec_depend>piper_msgs</exec_depend>            <!-- enable_srv -->
   <exec_depend>piper</exec_depend>                 <!-- 실물 드라이버 노드 -->
   <exec_depend>std_msgs</exec_depend>
+  <exec_depend>std_srvs</exec_depend>          <!-- 데모들의 켜고 끄기 서비스 -->
+  <exec_depend>tf2_ros</exec_depend>           <!-- manipulability 의 tcp 프레임, tcp_vs_flange 의 TF 읽기 -->
+  <exec_depend>moveit_msgs</exec_depend>       <!-- obstacle 의 planning scene -->
   <exec_depend>python3-numpy</exec_depend>
-  <exec_depend>python3-opencv</exec_depend>   <!-- D1 의 2D 숫자판 렌더링 -->
+  <exec_depend>python3-opencv</exec_depend>   <!-- manipulability 의 2D 숫자판 렌더링 -->
 
   <!-- 모델 · MoveIt 설정은 전부 piper 것을 쓴다 -->
   <exec_depend>piper_description</exec_depend>

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""D1 자세 드라이버 — 프리셋 자세를 /joint_states 로 내보낸다. (M3-3 · M3-4)
+"""자세 드라이버 — 프리셋 자세를 /joint_states 로 내보낸다. (M3-3 · M3-4)
 
-D1 런치에 항상 따라 뜬다. 자세를 바꾸는 것은 별도 노드다:
+URDF 런치에 항상 따라 뜬다. 자세를 바꾸는 것은 별도 노드다:
 
-    ros2 launch piper_lecture_demo d1_manipulability.launch.py   <- 한 번만
-    ros2 run piper_lecture_demo d1_goto.py elbow                 <- 필요할 때마다
+    ros2 launch piper_lecture_demo urdf_demos.launch.py   <- 한 번만
+    ros2 run piper_lecture_demo goto_pose.py elbow                 <- 필요할 때마다
 
 **이 노드가 /joint_states 의 유일한 발행자다.** 슬라이더 GUI 는 /gui_joint_states 로
 비켜 발행하고 이 노드가 그것을 받아 넘긴다. 발행자를 하나로 묶어두지 않으면 둘이
@@ -13,7 +13,7 @@ D1 런치에 항상 따라 뜬다. 자세를 바꾸는 것은 별도 노드다:
 동작 방식:
 
     슬라이더를 밀면   -> gui 모드. GUI 값을 그대로 넘긴다
-    d1_goto 를 쓰면   -> preset 모드. 목표 자세까지 보간한다
+    goto_pose 를 쓰면   -> preset 모드. 목표 자세까지 보간한다
     보간이 끝난 뒤
     슬라이더를 밀면   -> 다시 gui 모드로 돌아간다
 
@@ -67,7 +67,7 @@ PRESETS = {
     "slow": [1.183, 0.613, -0.167, -1.049, 1.040, 0.508],
 }
 
-GOTO_TOPIC = "~/goto"       # 사설 이름 — /d1_preset/goto 가 된다
+GOTO_TOPIC = "~/goto"       # 사설 이름 — /pose_presets/goto 가 된다
 GUI_TOPIC = "/gui_joint_states"   # 슬라이더 GUI 가 비켜서 발행하는 자리
 GUI_MOVED = 0.02            # GUI 값이 이만큼(rad) 「변하면」 사람이 슬라이더를 만진 것
 
@@ -75,7 +75,7 @@ GUI_MOVED = 0.02            # GUI 값이 이만큼(rad) 「변하면」 사람�
 class PoseDriver(Node):
 
     def __init__(self):
-        super().__init__("d1_preset")
+        super().__init__("pose_presets")
         self.declare_parameter("preset", "good")
         self.declare_parameter("duration", 4.0)
         self.declare_parameter("loop", False)
@@ -98,9 +98,9 @@ class PoseDriver(Node):
         self.create_timer(self.dt, self.tick)
         self.add_on_set_parameters_callback(self.on_param)
 
-        self.get_logger().info("자세 드라이버 시작. /joint_states 를 내보낸다")
-        self.get_logger().info(f"  쓸 수 있는 프리셋: {' '.join(sorted(PRESETS))}")
-        self.get_logger().info(f"  자세 바꾸기: ros2 run piper_lecture_demo d1_goto.py <이름>")
+        self.get_logger().info("pose driver up. publishing /joint_states")
+        self.get_logger().info(f"  presets: {' '.join(sorted(PRESETS))}")
+        self.get_logger().info("  change pose: ros2 run piper_lecture_demo goto_pose.py <name>")
         first = str(self.get_parameter("preset").value)
         if first != "good":
             self.goto(first)
@@ -124,7 +124,7 @@ class PoseDriver(Node):
         if (self.mode == "preset" and self.motion_done and self.gui_q is not None
                 and np.max(np.abs(q - self.gui_q)) > GUI_MOVED):
             self.mode = "gui"
-            self.get_logger().info("슬라이더가 움직였다 -> gui 모드")
+            self.get_logger().info("slider moved -> gui mode")
         self.gui_q = q
 
     def on_param(self, params):
@@ -141,14 +141,14 @@ class PoseDriver(Node):
     def goto(self, name):
         if name not in PRESETS:
             self.get_logger().error(
-                f"'{name}' 은 없는 프리셋이다. 쓸 수 있는 것: {' '.join(sorted(PRESETS))}")
+                f"'{name}' is not a known preset. available: {' '.join(sorted(PRESETS))}")
             return
         self.start = self.q.copy()
         self.target = np.array(PRESETS[name], dtype=float)
         self.t = 0.0
         self.mode = "preset"
         self.get_logger().info(
-            f"-> {name}  {np.round(self.target, 3).tolist()}  ({self.duration:.0f}초에 걸쳐)")
+            f"-> {name}  {np.round(self.target, 3).tolist()}  (over {self.duration:.0f} s)")
 
     # ------------------------------------------------------------ 내보내기
 

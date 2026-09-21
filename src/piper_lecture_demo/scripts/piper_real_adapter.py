@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """MoveIt 스택을 실물 팔에 물린다 — mock_components 자리를 대신하는 어댑터.
 
-    ros2 launch piper_lecture_demo moveit_demo.launch.py real:=true
+    ros2 launch piper_lecture_demo moveit_demos.launch.py real:=true
 
 MoveIt 이 기대하는 것과 piper 드라이버가 가진 것 사이가 비어 있다. 이 노드가 그 사이다.
 
@@ -107,9 +107,9 @@ class PiperAdapter(Node):
             cancel_callback=self.accept_cancel, callback_group=group)
 
         self.get_logger().info(
-            f"실물 어댑터. 속도 {self.speed} % · 명령 {self.rate:.0f} Hz · "
-            f"계단 한계 {math.degrees(self.max_step):.0f} 도")
-        self.get_logger().warn("실물이 붙어 있으면 이 노드는 진짜 팔을 움직인다.")
+            f"real-hardware adapter. speed {self.speed} % · commands {self.rate:.0f} Hz · "
+            f"step limit {math.degrees(self.max_step):.0f} deg")
+        self.get_logger().warn("if the hardware is connected, this node MOVES THE REAL ARM.")
 
     # ------------------------------------------------------------------ ①
 
@@ -157,7 +157,7 @@ class PiperAdapter(Node):
         if not bool(self.get_parameter("auto_enable").value):
             return True
         if not self.enable_cli.service_is_ready():
-            self.get_logger().warn("enable_srv 가 없다. 드라이버가 떠 있나?")
+            self.get_logger().warn("enable_srv is missing. is the driver up?")
             return False
         fut = self.enable_cli.call_async(Enable.Request(enable_request=True))
         end = self.get_clock().now().nanoseconds + 3e9
@@ -165,7 +165,7 @@ class PiperAdapter(Node):
             pass
         res = fut.result()
         if res is None:
-            self.get_logger().warn("enable_srv 응답이 없다")
+            self.get_logger().warn("no response from enable_srv")
             return False
         return True
 
@@ -189,7 +189,7 @@ class PiperAdapter(Node):
         traj = handle.request.trajectory
         q_now, _ = self.state()
         if q_now is None:
-            return self.reject(handle, "드라이버 상태를 아직 못 받았다")
+            return self.reject(handle, "no driver state received yet")
         if not traj.points:
             handle.succeed()
             return FollowJointTrajectory.Result()
@@ -197,30 +197,30 @@ class PiperAdapter(Node):
         try:
             order = [traj.joint_names.index(n) for n in ARM]
         except ValueError:
-            return self.reject(handle, f"궤적에 팔 관절이 다 없다: {traj.joint_names}")
+            return self.reject(handle, f"the trajectory is missing some arm joints: {traj.joint_names}")
 
         first = [traj.points[0].positions[i] for i in order]
         step = max(abs(a - b) for a, b in zip(first, q_now))
         if step > self.max_step:
             return self.reject(
                 handle,
-                f"첫 경유점이 지금 자세에서 {math.degrees(step):.0f} 도 떨어져 있다 "
-                f"(한계 {math.degrees(self.max_step):.0f} 도). 계단 명령을 막는다")
+                f"the first waypoint is {math.degrees(step):.0f} deg away from the current "
+                f"pose (limit {math.degrees(self.max_step):.0f} deg). refusing the step command")
 
         if not self.ensure_enabled():
-            return self.reject(handle, "드라이버를 enable 하지 못했다")
+            return self.reject(handle, "could not enable the driver")
 
         return self.stream(handle, traj, order, gripper=False)
 
     def execute_gripper(self, handle):
         traj = handle.request.trajectory
         if GRIPPER not in traj.joint_names:
-            return self.reject(handle, f"그리퍼 궤적이 아니다: {traj.joint_names}")
+            return self.reject(handle, f"not a gripper trajectory: {traj.joint_names}")
         if not traj.points:
             handle.succeed()
             return FollowJointTrajectory.Result()
         if not self.ensure_enabled():
-            return self.reject(handle, "드라이버를 enable 하지 못했다")
+            return self.reject(handle, "could not enable the driver")
         return self.stream(handle, traj, [traj.joint_names.index(GRIPPER)], gripper=True)
 
     def stream(self, handle, traj, order, gripper):
@@ -247,7 +247,7 @@ class PiperAdapter(Node):
                 if q_now is not None and not gripper:
                     self.send(q_now, grip_now)          # 그 자리에 세운다
                 handle.canceled()
-                self.get_logger().info("궤적 취소 — 그 자리에 세웠다")
+                self.get_logger().info("trajectory cancelled - held in place")
                 return FollowJointTrajectory.Result()
 
             while k + 1 < len(pts) and secs(pts[k + 1]) < t:
