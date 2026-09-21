@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""D1 — manipulability 타원체와 sigma_min 을 rviz 에 그린다. (M1 · M3-3 · M3-4)
+"""manipulability 타원체와 sigma_min 을 rviz 에 그린다. (M1 · M3-3 · M3-4)
 
 슬라이더를 밀거나 프리셋을 재생하면 팔이 펴지면서 타원체가 납작해지고
 sigma_min 이 0 으로 간다. 특이점은 「타원체가 선분이 되는 극한」이다.
@@ -21,9 +21,9 @@ readout:=marker 로 하면 예전처럼 3D 텍스트를 쓴다.
 읽는 것은 URDF 하나뿐이다. MoveIt 도 KDL 도 쓰지 않는다 — 여기서 쓰는 Jacobian 은
 강의에서 다룬 zi x (pe - pi) 를 그대로 구현한 piper_lecture_demo.kinematics 의 것이다.
 
-    ros2 launch piper_lecture_demo d1_manipulability.launch.py
-    ros2 launch piper_lecture_demo d1_manipulability.launch.py preset:=elbow
-    ros2 launch piper_lecture_demo d1_manipulability.launch.py readout:=marker
+    ros2 launch piper_lecture_demo urdf_demos.launch.py
+    ros2 launch piper_lecture_demo urdf_demos.launch.py preset:=elbow
+    ros2 launch piper_lecture_demo urdf_demos.launch.py readout:=marker
 """
 
 import cv2
@@ -50,7 +50,7 @@ AXIS_COLORS_255 = tuple(tuple(int(round(v * 255)) for v in c) for c in AXIS_COLO
 class Manipulability(Node):
 
     def __init__(self):
-        super().__init__("d1_manipulability")
+        super().__init__("manipulability")
 
         default_urdf = (get_package_share_directory("piper_description")
                         + "/urdf/piper_description.urdf")
@@ -71,8 +71,9 @@ class Manipulability(Node):
         #   marker — 3D 텍스트 마커. 카메라에 따라 크기가 변하고 팔에 가린다
         #   both / none
         self.declare_parameter("readout", "image")
-        # 타원체를 처음부터 감춘 채 띄우고 싶을 때. 강의 중에는 버튼으로 바꾼다.
-        self.declare_parameter("show", True)
+        # **기본은 감추기다.** 화면을 비운 채로 시작해 버튼으로 드러내는 것이
+        # 이 패키지의 연출이다 (ik_solutions 의 해와 같다).
+        self.declare_parameter("show", False)
 
         urdf = self.get_parameter("urdf").value
         self.tcp = np.array(self.get_parameter("tcp_offset").value, dtype=float)
@@ -86,7 +87,7 @@ class Manipulability(Node):
         self.readout = str(self.get_parameter("readout").value)
         if self.readout not in ("image", "marker", "both", "none"):
             self.get_logger().warn(
-                f"readout='{self.readout}' 은 없는 값이다. image 로 둔다")
+                f"readout='{self.readout}' is not a valid value. falling back to image")
             self.readout = "image"
 
         self.q = np.zeros(self.chain.dof)
@@ -133,14 +134,14 @@ class Manipulability(Node):
 
         self.get_logger().info(f"URDF={urdf}")
         self.get_logger().info(
-            f"  사슬 {self.chain.base} -> {self.chain.tip}, "
-            f"{self.chain.dof}축 {self.chain.names}")
+            f"  chain {self.chain.base} -> {self.chain.tip}, "
+            f"{self.chain.dof} axes {self.chain.names}")
         if self.chain.has_tool:
             self.get_logger().info(
-                f"  기준점 = TCP: {self.tip_link} 에서 {np.round(self.tcp, 4).tolist()} m "
-                f"(프레임 이름 'tcp')")
+                f"  reference = TCP: {np.round(self.tcp, 4).tolist()} m from {self.tip_link} "
+                f"(frame name 'tcp')")
         else:
-            self.get_logger().info(f"  기준점 = 플랜지 {self.tip_link} (TCP 오프셋 없음)")
+            self.get_logger().info(f"  reference = flange {self.tip_link} (no TCP offset)")
 
     def check_publishers(self):
         n = self.count_publishers("/joint_states")
@@ -149,14 +150,16 @@ class Manipulability(Node):
         self.warned_publishers = n
         if n > 1:
             self.get_logger().warn(
-                f"/joint_states 에 발행자가 {n} 개다. 서로 덮어쓰기 때문에 로봇 모델과 "
-                "타원체가 따로 논다.")
+                f"/joint_states has {n} publishers. they overwrite each other, so the robot "
+                "model and the ellipsoid drift apart.")
             self.get_logger().warn(
-                "  다른 데모나 MoveIt 스택(joint_state_broadcaster)이 살아 있는지 확인할 것:")
+                "  check whether another demo or the MoveIt stack "
+                "(joint_state_broadcaster) is still alive:")
             self.get_logger().warn(
                 "    ros2 topic info /joint_states --verbose")
         elif n == 0:
-            self.get_logger().warn("/joint_states 발행자가 없다. 슬라이더 GUI 나 preset 이 떴는지 확인할 것")
+            self.get_logger().warn("nothing publishes /joint_states. check that the slider GUI or the "
+                                   "preset driver came up")
 
     def on_joints(self, msg):
         index = {n: i for i, n in enumerate(msg.name)}
@@ -174,13 +177,13 @@ class Manipulability(Node):
         return T[:3, 3], U, sigma, w, cond, sigma6
 
     def on_show(self, req, res):
-        """타원체를 낼지 말지. D6 의 reveal 과 같은 방식이다 — 화면이 붐빌 때
+        """타원체를 낼지 말지. ik_solutions 의 reveal 과 같은 방식이다 — 화면이 붐빌 때
         (해 여덟 벌이 겹쳐 있을 때) 타원체를 잠깐 치우려고 둔 것이다."""
         self.show = bool(req.data)
         self.cleared = False
         self.pub_shown.publish(Bool(data=self.show))
         res.success = True
-        res.message = "타원체를 낸다" if self.show else "타원체를 감춘다"
+        res.message = "showing the ellipsoid" if self.show else "hiding the ellipsoid"
         return res
 
     def clear_markers(self):
@@ -342,9 +345,9 @@ class Manipulability(Node):
         _, _, sigma, w, cond, sigma6 = self.state()
         cond6 = sigma6[0] / sigma6[-1] if sigma6[-1] > 1e-12 else np.inf
         self.get_logger().info(
-            f"선속도 sigma=[{sigma[0]:.4f} {sigma[1]:.4f} {sigma[2]:.4f}] "
+            f"linear sigma=[{sigma[0]:.4f} {sigma[1]:.4f} {sigma[2]:.4f}] "
             f"w={w:.6f} cond={_fmt(cond)}   |   "
-            f"6자유도 sigma_min={sigma6[-1]:.6f} cond={_fmt(cond6)}")
+            f"6-DOF sigma_min={sigma6[-1]:.6f} cond={_fmt(cond6)}")
 
 
 def _fmt(v):

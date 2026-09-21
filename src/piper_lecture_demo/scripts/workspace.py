@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""D2 — 작업영역 점구름 + 조건수 컬러맵. (M3-2)
+"""작업영역 점구름 + 조건수 컬러맵. (M3-2)
 
     관절 한계 안에서 자세 샘플링 -> FK 로 손끝 위치 -> 각 점의 J -> 조건수 -> 색 -> PointCloud2
 
@@ -21,9 +21,9 @@
 
 읽는 것은 URDF 하나뿐이다. numpy 말고는 아무것도 필요 없다.
 
-    ros2 launch piper_lecture_demo d1_manipulability.launch.py workspace:=true
+    ros2 launch piper_lecture_demo urdf_demos.launch.py workspace:=true
 
-D1 스택에 얹혀 돈다. /joint_states 를 쓰지 않고 관절을 제 안에서 훑기 때문에
+URDF 스택에 얹혀 돈다. /joint_states 를 쓰지 않고 관절을 제 안에서 훑기 때문에
 자기 스택이 따로 필요 없다.
 """
 
@@ -67,7 +67,7 @@ def pack_rgb(rgb):
 class Workspace(Node):
 
     def __init__(self):
-        super().__init__("d2_workspace")
+        super().__init__("workspace")
 
         default_urdf = (get_package_share_directory("piper_description")
                         + "/urdf/piper_description.urdf")
@@ -90,7 +90,7 @@ class Workspace(Node):
         self.declare_parameter("approach_tol_deg", 25.0)
         # 부피 비율을 낼 때 쓰는 복셀 한 변 [m]
         self.declare_parameter("voxel", 0.02)
-        # 기준점(TCP). D1 과 같은 값이다 — 「닿는다」는 것은 플랜지가 아니라
+        # 기준점(TCP). manipulability 와 같은 값이다 — 「닿는다」는 것은 플랜지가 아니라
         # 손끝이 닿는다는 뜻이므로 작업영역도 이 점으로 그린다.
         self.declare_parameter("tcp_offset", [0.0, 0.0, 0.1358])
 
@@ -129,9 +129,9 @@ class Workspace(Node):
         axes, counts = self.grid()
         total = int(np.prod([len(a) for a in axes]))
         self.get_logger().info(
-            f"샘플 격자 {[len(a) for a in axes]} = {total} 자세. 계산 중...")
+            f"sampling grid {[len(a) for a in axes]} = {total} poses. computing...")
         self.get_logger().info(
-            f"  기준점 = {'TCP ' + str(np.round(self.tcp, 4).tolist()) + ' m' if self.chain.has_tool else '플랜지'}")
+            f"  reference = {'TCP ' + str(np.round(self.tcp, 4).tolist()) + ' m' if self.chain.has_tool else 'flange'}")
 
         lo = float(self.get_parameter("cond_log_min").value)
         hi = float(self.get_parameter("cond_log_max").value)
@@ -175,23 +175,24 @@ class Workspace(Node):
         keys_r = set(map(tuple, np.floor(pts / vox).astype(int)))
         keys_o = set(map(tuple, np.floor(pts[down] / vox).astype(int)))
         self.get_logger().info(
-            "완료 — 닿는 자세 {0} 중 접근 방향까지 맞는 자세 {1}".format(
+            "done - {1} of {0} reachable poses also meet the approach direction".format(
                 len(reach), len(oriented)))
         self.get_logger().info(
-            "  부피 기준 ({0:.0f} cm 복셀) : {1} / {2} 복셀 = {3:.1f} %".format(
+            "  by volume ({0:.0f} cm voxels): {1} / {2} voxels = {3:.1f} %".format(
                 vox * 100, len(keys_o), len(keys_r), 100.0 * len(keys_o) / max(1, len(keys_r))))
         self.get_logger().info(
-            "  ⚠ 이 비율은 하한이다. 손목(joint4·joint5) 을 촘촘히 샘플링할수록 올라간다")
+            "  NOTE this ratio is a lower bound; it rises as the wrist "
+            "(joint4/joint5) is sampled more finely")
         self.get_logger().info(
-            "  base_link 원점에서 잰 거리  최소 {0:.3f} m / 최대 {1:.3f} m".format(
+            "  distance from the base_link origin  min {0:.3f} m / max {1:.3f} m".format(
                 radius.min(), radius.max()))
         self.get_logger().info(
-            "  수평 반경                   최대 {0:.3f} m / 높이 {1:.3f} ~ {2:.3f} m".format(
+            "  horizontal radius                  max {0:.3f} m / height {1:.3f} ~ {2:.3f} m".format(
                 horiz.max(), pts[:, 2].min(), pts[:, 2].max()))
         self.get_logger().info(
-            "  조건수     중앙값 {0:.1f} / 90% 지점 {1:.1f} / 최대 {2:.1f}".format(
+            "  condition number  median {0:.1f} / 90th pct {1:.1f} / max {2:.1f}".format(
                 np.median(conds), np.percentile(conds, 90), conds.max()))
-        self.get_logger().info("  구름은 latch 되어 있다. rviz 를 나중에 띄워도 받는다.")
+        self.get_logger().info("  the clouds are latched, so rviz still receives them if started later.")
 
     # ------------------------------------------------------------------ 메시지
 

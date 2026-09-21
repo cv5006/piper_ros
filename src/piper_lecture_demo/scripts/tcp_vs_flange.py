@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""D3 — MoveIt 이 맞추는 것은 link6 이지 손끝이 아니다. (§12.3)
+"""MoveIt 이 맞추는 것은 link6 이지 손끝이 아니다. (§12.3)
 
 rviz 에서 볼 수 없는 것이 이것 하나다. MotionPlanning 의 목표 마커는 link6 에 붙어
 있는데 화면에는 그렇게 안 쓰여 있고, 손끝은 그보다 더 나가 있다. 첫 픽앤플레이스가
@@ -11,9 +11,9 @@ rviz 에서 볼 수 없는 것이 이것 하나다. MotionPlanning 의 목표 �
     파랑  손끝(TCP)    — 실제로 물건에 닿는 자리
 
 읽는 것은 TF 뿐이다. MoveIt 도 URDF 파싱도 필요 없어서 MoveIt 스택 위에서도,
-D1 의 URDF 스택 위에서도 그대로 돈다.
+URDF 스택 위에서도 그대로 돈다.
 
-    ros2 run piper_lecture_demo d3_tcp_offset.py
+    ros2 run piper_lecture_demo tcp_vs_flange.py
 
 손끝 자리는 link7(손가락) 프레임에서 가져온다. 없으면 tip_link 에서 z 로
 tcp_offset 만큼 나간 점을 쓴다 — 기본값 0.1358 m 는 URDF 와 그리퍼 메시에서 구한
@@ -33,7 +33,7 @@ from visualization_msgs.msg import Marker, MarkerArray
 class TcpOffset(Node):
 
     def __init__(self):
-        super().__init__("d3_tcp_offset")
+        super().__init__("tcp_vs_flange")
         self.declare_parameter("base_link", "base_link")
         self.declare_parameter("tip_link", "link6")      # MoveIt 그룹의 끝. 목표가 붙는 자리
         self.declare_parameter("finger_link", "link7")   # 손가락. 없으면 오프셋으로 대신한다
@@ -54,7 +54,7 @@ class TcpOffset(Node):
         self.reported = False
 
         self.get_logger().info(
-            f"{self.tip}(MoveIt 목표) 와 손끝을 함께 표시한다. TF 가 올 때까지 기다린다")
+            f"marking {self.tip} (what MoveIt aims at) and the TCP. waiting for TF")
 
     def lookup(self, child):
         try:
@@ -83,9 +83,9 @@ class TcpOffset(Node):
 
         gap = float(np.linalg.norm(p_tip - p6))
         if not self.reported:
-            self.get_logger().info(f"  {self.tip} 원점 = {np.round(p6, 3).tolist()}")
-            self.get_logger().info(f"  손끝({source}) = {np.round(p_tip, 3).tolist()}")
-            self.get_logger().info(f"  차이 {gap:.4f} m — 목표 자세를 그대로 주면 이만큼 빗나간다")
+            self.get_logger().info(f"  {self.tip} origin = {np.round(p6, 3).tolist()}")
+            self.get_logger().info(f"  TCP ({source}) = {np.round(p_tip, 3).tolist()}")
+            self.get_logger().info(f"  gap {gap:.4f} m - aiming at the goal pose as-is misses by this much")
             self.reported = True
 
         now = self.get_clock().now().to_msg()
@@ -95,7 +95,7 @@ class TcpOffset(Node):
             m = Marker()
             m.header.frame_id = self.base
             m.header.stamp = now
-            m.ns = "d3_tcp"
+            m.ns = "tcp_vs_flange"
             m.id = mid
             m.type = mtype
             m.action = Marker.ADD

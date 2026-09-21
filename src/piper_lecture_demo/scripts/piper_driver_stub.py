@@ -55,7 +55,7 @@ class Stub(Node):
         self.create_timer(self.dt, self.tick)
         self.create_timer(2.0, self.report)
 
-        self.get_logger().info("piper 드라이버 대역. 실물이 아니다.")
+        self.get_logger().info("piper driver stub. this is NOT the real hardware.")
 
     def on_enable(self, req, res):
         self.enabled = bool(req.enable_request)
@@ -87,9 +87,10 @@ class Stub(Node):
 
     def report(self):
         if self.n_cmd:
-            speed = "없음(진짜 드라이버면 전속)" if self.speed is None else f"{self.speed:.0f} %"
+            speed = ("none (the real driver would run at full speed)"
+                     if self.speed is None else f"{self.speed:.0f} %")
             self.get_logger().info(
-                f"명령 {self.n_cmd} 개 받음 · 속도 필드 {speed} · "
+                f"{self.n_cmd} commands received · speed field {speed} · "
                 f"enable={self.enabled}")
             self.n_cmd = 0
 

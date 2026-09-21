@@ -126,7 +126,7 @@ class Chain:
         chain, link = [], tip
         while link != base:
             if link not in by_child:
-                raise ValueError(f"'{link}' 의 부모 관절을 URDF 에서 찾지 못했다. base='{base}' 확인 필요")
+                raise ValueError(f"no parent joint for '{link}' in the URDF; check base='{base}'")
             j = by_child[link]
             chain.append(j)
             link = j.parent
@@ -142,7 +142,7 @@ class Chain:
             elif tool.shape == (4, 4):
                 self.tool = tool
             else:
-                raise ValueError("tool 은 3-벡터이거나 4x4 여야 한다")
+                raise ValueError("tool must be a 3-vector or a 4x4 matrix")
         self.joints = chain
         self.movable = [j for j in chain if j.movable]
         self.names = [j.name for j in self.movable]
@@ -228,10 +228,10 @@ class Visuals:
     """URDF 의 링크를 **어디에 어떤 메시로** 그리는지. 로봇을 여러 벌 그릴 때 쓴다.
 
     쓰는 이유는 하나다 — MoveIt 의 Trajectory 디스플레이가 **SRDF 를 요구한다.**
-    D1 스택에는 `robot_description` 만 있고 `robot_description_semantic` 이 없어서
+    URDF 스택에는 `robot_description` 만 있고 `robot_description_semantic` 이 없어서
     그 디스플레이는 뜨지 못한다 (`Unable to parse SRDF`). 링크 메시를 Marker 로
     직접 놓으면 rviz 기본 플러그인만으로 되고, URDF 하나만 읽는 이 패키지의
-    D1 · D2 와 조건이 같아진다.
+    manipulability · workspace 와 조건이 같아진다.
 
     Chain 과 달리 **사슬 하나가 아니라 트리 전체**를 본다. 손가락처럼 가지로
     갈라져 나온 링크도 제자리에 놓아야 로봇으로 보이기 때문이다.
