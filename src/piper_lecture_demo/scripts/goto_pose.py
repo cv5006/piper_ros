@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-"""자세 전환 — 떠 있는 자세 드라이버에게 프리셋 하나를 지시하고 끝난다.
+"""자세 전환 — 떠 있는 드라이버에 프리셋 하나를 지시하고 끝난다.
 
     ros2 run piper_lecture_demo goto_pose.py elbow
-    ros2 run piper_lecture_demo goto_pose.py slow
-    ros2 run piper_lecture_demo goto_pose.py            <- 목록만 보여준다
+    ros2 run piper_lecture_demo goto_pose.py          <- 목록만
 
-rviz 도 드라이버도 내리지 않는다. 강의 중에 자세만 갈아끼우기 위한 것이다.
-드라이버(pose_presets)는 URDF 런치가 항상 같이 띄운다.
+rviz 도 드라이버도 내리지 않는다. 드라이버는 URDF 런치가 띄운다.
 """
 
 import sys

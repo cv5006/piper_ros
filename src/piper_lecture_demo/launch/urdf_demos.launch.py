@@ -1,36 +1,17 @@
 """URDF 만 읽는 데모 셋 — manipulability · workspace · ik_solutions.
 
-MoveIt 을 세우지 않은 팀도 그대로 돌린다. 읽는 것은 URDF 하나뿐이다. (M1 · M3-2 · M3-3 · M3-4)
-
     ros2 launch piper_lecture_demo urdf_demos.launch.py
-
-슬라이더를 밀면 팔이 펴지고, 타원체가 납작해지고, sigma_min 이 0 으로 간다.
-
-특이점 자세는 슬라이더로 정확히 맞추기 어렵다. 프리셋으로 재생한다:
-
-    ros2 launch piper_lecture_demo urdf_demos.launch.py preset:=wrist
-    ros2 launch piper_lecture_demo urdf_demos.launch.py preset:=elbow loop:=true
-
-  슬라이더 GUI 와 프리셋 드라이버는 **둘 다 항상 뜬다** (GUI 는 use_gui:=false 로 끈다).
-  preset 은 기동 자세일 뿐이고 기본값은 good 이다.
-  쓸 수 있는 값: good · stretch · elbow · wrist · slow · home · shoulder
-
-MoveIt 은 쓰지 않는다. 읽는 것은 URDF 하나뿐이라 MoveIt 을 아직 안 세운 팀도 그대로 돌린다.
-
-**workspace(작업영역 점구름)와 ik_solutions(IK 해 전수 탐색)도 여기서 뜬다.**
-둘 다 URDF 만 읽으므로 MoveIt 스택이 필요 없다. workspace 는 계산에 16 초쯤 걸려서
-기본으로는 끄고, 필요할 때 켠다.
-
     ros2 launch piper_lecture_demo urdf_demos.launch.py workspace:=true
-
-점구름은 latch 되므로 계산이 끝나면 그대로 화면에 남는다.
-자세 프리셋으로 팔을 옮겨가며 해를 다시 찾는 것이 이 스택에서 더 편하다 —
-프리셋 버튼과 IK 버튼이 같은 패널에 있고, 타원체와 해가 한 화면에 같이 나온다.
-
     ros2 launch piper_lecture_demo urdf_demos.launch.py ik:=false panel:=false
 
-⚠ 실물을 연결하지 않은 상태로 띄울 것. 이 레포에서 /joint_states 는 명령 토픽이라
-  연결돼 있으면 이 슬라이더가 진짜 팔을 움직인다 (강의 노트 §6-①③).
+같이 뜨는 것 — rsp · 슬라이더 GUI · 자세 드라이버 · manipulability · ik_solutions ·
+패널 · rviz. workspace 는 계산 16 초라 기본으로 끈다.
+
+자세 전환은 별도 노드다 (`goto_pose.py`). 특이점은 슬라이더로 맞추기 어렵다.
+**시각화는 전부 감추기가 기본** — `ellipsoid:=true` · `ik_valid:=true` 로 켠다.
+
+⚠ 실물을 연결하지 않은 상태로 띄울 것. /joint_states 가 명령 토픽이라 슬라이더가
+  진짜 팔을 움직인다 (§6-①③).
 """
 
 import os

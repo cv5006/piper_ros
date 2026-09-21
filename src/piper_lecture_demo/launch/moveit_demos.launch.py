@@ -1,29 +1,16 @@
-"""MoveIt 데모 스택 — piper 의 런치를 그대로 부르고 rviz 설정만 우리 것을 넘긴다.
+"""MoveIt 데모 스택 — piper 런치를 include 하고 rviz 설정만 바꿔 끼운다.
 
-    ros2 launch piper_lecture_demo moveit_demos.launch.py
+    ros2 launch piper_lecture_demo moveit_demos.launch.py [panel:=false] [ik:=false]
+    ros2 launch piper_lecture_demo moveit_demos.launch.py real:=true [stub:=true] [can_port:=can1]
 
-스택 자체는 만들지 않는다. piper 의 demo.launch.py 가 rsp · move_group · ros2_control ·
-rviz 를 다 띄우므로 그것을 include 하고, rviz 설정만 바꿔 끼운다. 우리 설정은 piper 의
-moveit.rviz 에 디스플레이 셋을 더한 것이다.
+스택은 만들지 않는다. piper 의 demo.launch.py 가 rsp · move_group · ros2_control · rviz
+를 다 띄운다. 우리 설정이 더하는 디스플레이 —
 
-    Lecture Markers                 obstacle · path_compare 가 내는 Marker
-    IK solutions (within limits)    ik_solutions — 초록, 기본 감춤
-    IK solutions (out of limits)    ik_solutions — 빨강, 기본 감춤
+    Lecture Markers                 obstacle · path_compare 의 Marker
+    IK solutions (within/out of limits)   ik_solutions — 초록/빨강, 기본 감춤
 
-ik_solutions 노드와 강의 패널도 같이 띄운다. 둘 다 인자로 끌 수 있다.
-
-    ros2 launch piper_lecture_demo moveit_demos.launch.py panel:=false ik:=false
-
-실물 팔에 물리려면 real:=true 다. 그러면 mock_components 대신 진짜 드라이버와
-어댑터가 뜬다 (piper_real_adapter.py 주석 참조).
-
-    ros2 launch piper_lecture_demo moveit_demos.launch.py real:=true
-    ros2 launch piper_lecture_demo moveit_demos.launch.py real:=true can_port:=can1
-    ros2 launch piper_lecture_demo moveit_demos.launch.py real:=true stub:=true   # 실물 없이
-
-⚠ real:=true 는 **드라이버를 remap 없이** 띄운다. piper 의 런치는
-  joint_ctrl_single 을 /joint_states 로 remap 하는데, 그 상태로는 어댑터가 내보낸
-  상태가 그대로 명령으로 되돌아가 루프가 된다. 그래서 드라이버 노드를 직접 띄운다.
+⚠ real:=true 는 드라이버를 **remap 없이** 띄운다. piper 런치의 remap 상태로는 어댑터가
+  낸 상태가 명령으로 되돌아와 루프가 된다 (piper_real_adapter.py 주석 참조).
 
 한 번 띄워두고 강의 내내 내리지 않는 것을 전제로 만들었다.
 """

@@ -1,19 +1,16 @@
 // 같은 두 자세, 두 경로 — 관절 보간과 손끝 직선. (M4-1)
 //
-// 슬라이드는 관절 공간과 작업 공간에 각각 직선을 그려놓고 질문만 던진다.
-// 그 답이 여기 있다: 두 직선은 같은 동작이 아니다.
+// **두 직선은 같은 동작이 아니다.**
 //
-//   ① 관절 보간 (OMPL)            -> 관절 공간에서 이어진 길. 손끝 자취는 휜다
-//   ② 손끝 직선 (computeCartesianPath) -> 작업 공간에서 이은 직선. 관절값은 제멋대로다
-//   ③ 작업영역 밖으로 ②를 요구하면 -> 직선을 다 못 간다. fraction 이 그것을 숫자로 말한다
+//   ① 관절 보간 (OMPL)                 관절 공간의 길. 손끝 자취는 휜다
+//   ② 손끝 직선 (computeCartesianPath)  작업 공간의 직선. 관절값은 제멋대로
+//   ③ 작업영역 밖으로 ②를 요구          다 못 간다. fraction 이 숫자로 말한다
 //
-// 플래너는 OMPL 하나만 쓴다. 직선은 플래너가 아니라 MoveIt 의 카테시안 보간이 만든다.
+// 플래너는 OMPL 하나. 직선은 플래너가 아니라 MoveIt 의 카테시안 보간이 만든다.
+// MoveIt 스택을 먼저 띄울 것. 기동 시 'No kinematics plugins defined' 경고 한 줄은
+// 자기 쪽 로봇 모델 때문이고 결과에 영향 없다.
 //
 //   ros2 run piper_lecture_demo path_compare
-//
-// MoveIt 스택(moveit_demos.launch.py)을 먼저 띄워 둘 것. 기동할 때
-// 'No kinematics plugins defined' 경고가 한 줄 뜨는데 결과에는 영향이 없다 —
-// 이 노드가 자기 쪽에도 로봇 모델을 들고 있어야 해서 나는 소리다.
 
 #include <chrono>
 #include <memory>

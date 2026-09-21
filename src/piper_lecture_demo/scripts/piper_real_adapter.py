@@ -1,41 +1,22 @@
 #!/usr/bin/env python3
-"""MoveIt 스택을 실물 팔에 물린다 — mock_components 자리를 대신하는 어댑터.
+"""MoveIt 스택을 실물 팔에 물린다 — mock_components 자리를 대신한다.
 
     ros2 launch piper_lecture_demo moveit_demos.launch.py real:=true
 
-MoveIt 이 기대하는 것과 piper 드라이버가 가진 것 사이가 비어 있다. 이 노드가 그 사이다.
+MoveIt 의 FollowJointTrajectory 와 드라이버의 joint_ctrl_single 사이가 비어 있다.
 
-  MoveIt 이 부르는 것                        piper 드라이버가 가진 것
-  ─────────────────────────────────────      ─────────────────────────────────
-  /arm_controller/follow_joint_trajectory    joint_ctrl_single  (JointState 하나 = 목표 자세)
-  /gripper_controller/follow_joint_trajectory
-  /joint_states (상태)                       joint_states_feedback (JointState)
+    ① 상태 다리   joint_states_feedback -> /joint_states
+                  'gripper' -> joint7, joint8 도 채운다 (Missing joint8 이 없어진다)
+    ② 명령 다리   joint_ctrl_single 로 목표를 쏜다
+                  ⚠ velocity[6] 에 속도(%)를 반드시 채운다. 비우면 전속(100)이 걸린다
+    ③ 궤적 실행   드라이버에 보간이 없으므로 여기서 보간해 쏜다
 
-하는 일은 셋이다.
-
-  ① 상태 다리 — joint_states_feedback -> /joint_states
-     드라이버는 일곱째 관절을 **'gripper'** 라고 부르는데 로봇 모델은 joint7 이다.
-     이름을 바꾸고 joint8 도 채운다 (URDF 에 mimic 이 없어 move_group 이
-     「Missing joint8」을 1 초에 한 번씩 내던 것도 여기서 없어진다).
-
-  ② 명령 다리 — joint_ctrl_single 로 목표 자세를 쏜다
-     **velocity[6] 에 속도(%)를 반드시 채운다.** 비워 두면 드라이버가
-     MotionCtrl_2(..., 100) 으로 전속을 건다.
-
-  ③ 궤적 실행 — FollowJointTrajectory 액션 서버 둘
-     드라이버의 JointCtrl 은 메시지 하나당 목표 하나이고 보간이 없다. 그래서
-     경유점 사이를 여기서 보간해 일정 주기로 쏘는 것이 곧 실행이다.
-
-⚠ 드라이버를 **remap 없이** 띄울 것. piper 의 start_single_piper.launch.py 는
-  joint_ctrl_single 을 /joint_states 로 remap 하는데, 그 상태로 이 노드를 켜면
-  ①이 내보낸 상태가 그대로 ②의 명령으로 되돌아가 루프가 된다. real:=true 런치는
-  드라이버 노드를 remap 없이 직접 띄운다.
-
-⚠ 실물이 붙어 있으면 이 노드는 진짜 팔을 움직인다. 처음 켤 때 파라미터를 확인할 것.
+⚠ 드라이버를 **remap 없이** 띄울 것. piper 런치는 joint_ctrl_single 을 /joint_states 로
+  remap 하는데, 그 상태로는 ①의 상태가 ②의 명령으로 되돌아와 루프가 된다.
+⚠ 실물이 붙어 있으면 진짜 팔이 움직인다.
 
     speed_percent   드라이버에 넘기는 속도 (1~100). 기본 20
-    max_step_rad    첫 경유점이 지금 자세에서 이만큼 넘게 떨어져 있으면 goal 을
-                    거절한다. 계단 명령을 막는 장치다. 기본 0.35 rad (20도)
+    max_step_rad    첫 경유점이 이만큼 넘게 떨어지면 goal 거절. 기본 0.35 rad
 """
 
 import math

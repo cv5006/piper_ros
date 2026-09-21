@@ -1,34 +1,21 @@
 #!/usr/bin/env python3
 """충돌 물체를 planning scene 에 세우거나 치운다. (M4)
 
-플래너에게 주는 것은 셋뿐이다: 시작 · 목표 · 충돌 환경. 앞의 둘은 rviz 의
-MotionPlanning 패널에서 직접 주고, 남은 하나를 이 노드가 준다.
+플래너에 주는 것은 셋 — 시작 · 목표 · 충돌 환경. 앞의 둘은 rviz, 나머지가 이 노드다.
 
-    ros2 run piper_lecture_demo obstacle.py spawn         # 기본 기둥을 세운다
-    ros2 run piper_lecture_demo obstacle.py despawn       # 그것을 치운다
-    ros2 run piper_lecture_demo obstacle.py despawn --all # lecture_* 를 전부 치운다
-    ros2 run piper_lecture_demo obstacle.py list          # 지금 뭐가 있나
+    obstacle.py spawn              기본 기둥
+    obstacle.py despawn [--all]    그것만 / lecture_* 전부
+    obstacle.py list
 
-자리와 크기를 바꾸려면 코드를 고칠 필요 없다.
+    --shape box       --size = x y z 세 변 [m]
+    --shape cylinder  --size = 높이, 반지름 (shape_msgs/SolidPrimitive 순서)
+    --shape sphere    --size = 반지름
 
-    obstacle.py spawn --id wall --shape box --xyz 0.35 0 0.30 --size 0.02 0.40 0.30
-    obstacle.py spawn --id can --shape cylinder --xyz 0.30 0.20 0.10 --size 0.20 0.05
-    obstacle.py spawn --id ball --shape sphere --xyz 0.30 0 0.40 --size 0.06
+기본 기둥 자리는 계산해서 골랐다 — 반경 0.39 m 로 뻗어 joint1 으로 스윙하면 그
+한가운데를 지나므로 관절 공간에서 곧게 가면 반드시 통과한다.
 
-  box       --size 는 x y z 세 변 [m]
-  cylinder  --size 는 높이, 반지름 (shape_msgs/SolidPrimitive 의 순서다)
-  sphere    --size 는 반지름
-
-rviz 로도 만들 수 있다 — MotionPlanning 패널의 Scene Objects 탭에서 도형을 더하고
-마우스로 옮긴 뒤 Publish 하면 된다. 그렇게 만든 것을 .scene 파일로 내보내고
-다시 가져올 수도 있다 (같은 탭의 Export/Import Scene Geometry). 강의처럼 매번 같은
-자리에 같은 것을 세워야 할 때는 이 노드가 편하고, 즉흥적으로 만들 때는 rviz 가 편하다.
-
-기본 기둥 자리는 계산해서 골랐다. 팔을 반경 0.39 m 로 뻗은 채 joint1 으로 좌우로
-스윙하면 그 한가운데를 지나므로, 관절 공간에서 곧게 가면 반드시 통과하는 자리다.
-
-⚠ 물체는 move_group 이 살아 있는 한 planning scene 에 남는다. 다음 데모의 목표 자세가
-  「이미 충돌」이 되어 IK 부터 실패할 수 있으므로, 쓰고 나면 치울 것.
+⚠ 물체는 move_group 이 사는 동안 남는다. 다음 데모가 「이미 충돌」로 IK 부터
+  실패할 수 있다. 쓰고 나면 치울 것.
 """
 
 import argparse

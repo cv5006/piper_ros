@@ -1,16 +1,12 @@
-"""URDF 하나만 읽어서 FK 와 기하학적 Jacobian 을 만든다.
+"""URDF -> FK · 기하학적 Jacobian. numpy 만 쓴다.
 
-의존성은 numpy 와 파이썬 표준 라이브러리뿐이다. MoveIt 도 KDL 도 쓰지 않는다 —
-이 파일에 적힌 것이 곧 강의에서 다룬 두 수식이기 때문이다.
+강의의 두 수식이 그대로 코드다.
 
-    ① T₀ₙ = T₁T₂⋯Tₙ            (형상)  -> Chain.fk()
-    ② v = J(q) q̇                (운동)  -> Chain.jacobian()
+    T₀ₙ = T₁T₂⋯Tₙ        -> Chain.fk()
+    Jᵢ = [ zᵢ × (pₑ − pᵢ) ; zᵢ ]  -> Chain.jacobian()
 
-회전관절 하나가 Jacobian 의 열 하나이고, 그 열은
-
-    Jᵢ = [ zᵢ × (pₑ − pᵢ) ; zᵢ ]
-
-이다. zᵢ 와 pᵢ 는 ⁰Tᵢ 에서 그냥 꺼내는 값이라, ②는 ①의 부산물로 나온다.
+zᵢ · pᵢ 는 ⁰Tᵢ 에서 꺼내는 값이라 운동은 형상의 부산물이다.
+MoveIt 과 같은 값인지는 jacobian_check 가 대조한다 (차이 0).
 """
 
 import xml.etree.ElementTree as ET
@@ -112,11 +108,9 @@ class Chain:
     """base_link 에서 tip 까지의 직렬 사슬."""
 
     def __init__(self, urdf_path, base="base_link", tip="link6", tool=None):
-        """tool 은 tip 프레임에서 잰 공구 끝점(TCP) 오프셋이다 (3-벡터 또는 4x4).
+        """tool = tip 프레임에서 잰 TCP 오프셋 (3-벡터 또는 4x4).
 
-        기준점을 옮기면 FK 뿐 아니라 Jacobian 도 바뀐다 — J 의 선속도 열이
-        zi x (pe - pi) 이고 pe 가 바로 이 점이기 때문이다. 플랜지에서 재느냐
-        손끝에서 재느냐에 따라 「얼마나 잘 움직이나」의 답이 달라진다.
+        기준점을 옮기면 Jacobian 도 바뀐다 — 선속도 열이 zi x (pe - pi) 이고 pe 가 그 점이다.
         """
         root = ET.parse(urdf_path).getroot()
         joints = [Joint(j) for j in root.findall("joint")]
@@ -154,12 +148,11 @@ class Chain:
         return len(self.movable)
 
     def frames(self, q):
-        """관절값 q 에 대해 ⁰T 들을 차례로 만든다.
+        """q -> (T_tip, axes, origins).
 
-        반환 (T_tip, axes, origins):
-          T_tip   — ⁰T_tip · T_tool (4x4). tool 을 줬으면 TCP 까지 간 변환이다
-          axes    — 각 가동관절 축의 월드 방향 zᵢ
-          origins — 각 가동관절 원점의 월드 위치 pᵢ
+          T_tip   ⁰T_tip · T_tool (4x4)
+          axes    가동관절 축의 월드 방향 zᵢ
+          origins 가동관절 원점의 월드 위치 pᵢ
         """
         q = np.asarray(q, dtype=float)
         T = np.eye(4)
@@ -189,9 +182,9 @@ class Chain:
         return not np.allclose(self.tool, np.eye(4))
 
     def jacobian(self, q):
-        """기하학적 Jacobian (6 x dof). 위 3행이 선속도, 아래 3행이 각속도.
+        """기하학적 Jacobian (6 x dof). 위 3행 선속도, 아래 3행 각속도.
 
-        기준점은 tool 을 줬으면 TCP, 안 줬으면 tip 이다.
+        기준점은 tool 이 있으면 TCP, 없으면 tip.
         """
         T, axes, origins = self.frames(q)
         p_e = T[:3, 3]
@@ -207,12 +200,11 @@ class Chain:
 
 
 def metrics(Jv):
-    """선속도 Jacobian (3 x n) 에서 강의가 쓰는 지표 세 개를 뽑는다.
+    """선속도 Jacobian (3 x n) -> (U, sigma, w, cond).
 
-    반환 (U, sigma, w, cond)
-      sigma — 특이값 σ₁ ≥ σ₂ ≥ σ₃. 타원체의 반축 길이다
-      w     — manipulability √(det J Jᵀ) = σ₁σ₂σ₃
-      cond  — 조건수 σ₁/σ₃. 특이점에서 ∞ 로 간다
+      sigma  특이값 σ₁ ≥ σ₂ ≥ σ₃ = 타원체 반축
+      w      manipulability √(det J Jᵀ) = σ₁σ₂σ₃
+      cond   σ₁/σ₃. 특이점에서 ∞
     """
     U, sigma, _ = np.linalg.svd(Jv)
     # det(U) = -1 이면 왼손 좌표계라 쿼터니언이 뒤집힌다. 열 하나를 뒤집어 바로잡는다.
@@ -225,16 +217,12 @@ def metrics(Jv):
 
 
 class Visuals:
-    """URDF 의 링크를 **어디에 어떤 메시로** 그리는지. 로봇을 여러 벌 그릴 때 쓴다.
+    """링크를 어디에 어떤 메시로 그리는지. 로봇을 여러 벌 그릴 때 쓴다.
 
-    쓰는 이유는 하나다 — MoveIt 의 Trajectory 디스플레이가 **SRDF 를 요구한다.**
-    URDF 스택에는 `robot_description` 만 있고 `robot_description_semantic` 이 없어서
-    그 디스플레이는 뜨지 못한다 (`Unable to parse SRDF`). 링크 메시를 Marker 로
-    직접 놓으면 rviz 기본 플러그인만으로 되고, URDF 하나만 읽는 이 패키지의
-    manipulability · workspace 와 조건이 같아진다.
+    MoveIt 의 Trajectory 디스플레이가 SRDF 를 요구해 URDF 스택에서 뜨지 못한다.
+    링크 메시를 Marker 로 직접 놓으면 rviz 기본 플러그인만으로 된다.
 
-    Chain 과 달리 **사슬 하나가 아니라 트리 전체**를 본다. 손가락처럼 가지로
-    갈라져 나온 링크도 제자리에 놓아야 로봇으로 보이기 때문이다.
+    Chain 과 달리 사슬 하나가 아니라 **트리 전체**를 본다 (손가락 같은 가지 포함).
     """
 
     def __init__(self, urdf_path, base="base_link"):
@@ -266,10 +254,9 @@ class Visuals:
         return list(self.mesh)
 
     def link_poses(self, q_by_name):
-        """관절값(이름 -> 값, 빠진 것은 0)으로 모든 링크의 ⁰T 를 구한다.
+        """관절값(이름 -> 값, 빠진 것은 0) -> 모든 링크의 ⁰T.
 
-        base 에서 트리를 따라 내려가며 T_child = T_parent · origin · move 를 쌓는다.
-        Chain.frames() 가 사슬 하나에 대해 하는 일과 같은 식이다.
+        base 에서 트리를 내려가며 T_child = T_parent · origin · move 를 쌓는다.
         """
         poses = {self.base: np.eye(4)}
         stack = [self.base]

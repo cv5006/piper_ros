@@ -1,31 +1,19 @@
-// Jacobian 을 두 가지로 구해 나란히 놓는다 — MoveIt 의 API 와 강의의 수식.
+// Jacobian 을 두 가지로 재서 대조한다 — MoveIt API 와 강의 수식.
 //
-// 이 패키지의 manipulability · workspace 는 Jacobian 을 직접 구현한 것
-// (piper_lecture_demo/kinematics.py) 으로 계산한다. 학생 입장에서 생기는 의문이
-// 하나 있다: **그게 맞는 값인가, 그리고 실무에서 MoveIt 을 쓸 때는 어떻게 얻는가.**
-// 이 노드가 그 둘을 잇는다.
+//   ① MoveIt      state.getJacobian(jmg, link, ref_point, J)   한 줄
+//   ② 강의 수식   Jᵢ = [ zᵢ × (pₑ − pᵢ) ; zᵢ ]                  아래 15 줄
 //
-//   ① MoveIt        state.getJacobian(jmg, link, ref_point, J)      <- 한 줄이다
-//   ② 강의 수식     Jᵢ = [ zᵢ × (pₑ − pᵢ) ; zᵢ ]                     <- 아래 15 줄이다
+// 프리셋 일곱 자세에서 **차이가 정확히 0** 이다. 부동소수 오차조차 없다.
+// ②를 C++ 로 다시 적은 것이 핵심 — kinematics.py 를 import 해 비교하면 「같은 코드가
+// 같은 값」에 그친다. 독립 구현 둘이 같은 값이면 수식이 맞다는 증거다.
 //
-// 같은 자세에서 둘을 재고 차이를 낸다. 프리셋 일곱 자세에서 **차이가 정확히 0 이다**
-// (부동소수 오차조차 없다 — MoveIt 이 같은 수식을 같은 순서로 계산한다).
-// 그래서 kinematics.py 는 「교육용 장난감」이 아니라 MoveIt 과 같은 것을 하는
-// 구현이고, 반대로 MoveIt 의 한 줄이 강의에서 다룬 그 수식이라는 것이 확인된다.
-//
-// ②를 여기 다시 구현한 이유는 대조의 의미 때문이다. kinematics.py 를 불러와서
-// 비교하면 「같은 코드가 같은 값을 낸다」가 되지만, 수식을 C++ 로 새로 적어
-// MoveIt 과 맞추면 **구현 둘이 독립적으로 같은 값에 도달한다**는 것이 된다.
-//
-// move_group 은 필요 없다. URDF 와 SRDF 만 읽어 RobotModel 을 세운다. IK 플러그인도
-// 쓰지 않으므로 load_kinematics_solvers 를 끈다 (그래야 kinematics.yaml 경고가 안 뜬다).
+// 출력의 sigma/w/cond 는 manipulability 가 같은 프리셋에서 찍는 값과 일치하므로
+// kinematics.py 까지 같이 대조된다.
 //
 //     ros2 run piper_lecture_demo jacobian_check
 //     ros2 run piper_lecture_demo jacobian_check --ros-args -p tcp_offset:="[0.0,0.0,0.0]"
 //
-// tcp_offset 을 0 으로 주면 플랜지(link6) 기준이 된다. 기본값은 손끝(TCP)이고
-// manipulability 의 기본값과 같으므로, 아래 표의 숫자가 그 노드의 터미널 출력과
-// 그대로 일치한다 — 그것이 kinematics.py 와의 대조다.
+// move_group 불필요. URDF + SRDF 로 RobotModel 만 세우고 IK 플러그인은 끈다.
 
 #include <algorithm>
 #include <cstdio>
@@ -72,12 +60,8 @@ std::string slurp(const std::string& path)
   return ss.str();
 }
 
-// ② 강의 수식 그대로. 회전관절 하나가 Jacobian 의 열 하나다.
-//
-//     Jᵢ = [ zᵢ × (pₑ − pᵢ) ; zᵢ ]
-//
-// zᵢ 는 관절 축의 월드 방향, pᵢ 는 관절 원점의 월드 위치, pₑ 는 기준점이다.
-// 둘 다 ⁰Tᵢ 에서 그냥 꺼내는 값이라, 운동은 형상의 부산물로 나온다.
+// ② 강의 수식 그대로.  Jᵢ = [ zᵢ × (pₑ − pᵢ) ; zᵢ ]
+// zᵢ = 관절 축 월드 방향, pᵢ = 관절 원점 월드 위치, pₑ = 기준점. 전부 ⁰Tᵢ 에서 꺼낸다.
 Eigen::MatrixXd jacobianFromFormula(const moveit::core::RobotState& state,
                                     const moveit::core::JointModelGroup* jmg,
                                     const moveit::core::LinkModel* tip,
