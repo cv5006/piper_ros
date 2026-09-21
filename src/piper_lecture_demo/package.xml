@@ -38,6 +38,7 @@
   <exec_depend>moveit_msgs</exec_depend>       <!-- obstacle 의 planning scene -->
   <exec_depend>python3-numpy</exec_depend>
   <exec_depend>python3-opencv</exec_depend>   <!-- manipulability 의 2D 숫자판 렌더링 -->
+  <exec_depend>python3-pyqt5</exec_depend>    <!-- lecture_panel 의 버튼 창 -->
 
   <!-- 모델 · MoveIt 설정은 전부 piper 것을 쓴다 -->
   <exec_depend>piper_description</exec_depend>

@@ -1,30 +1,18 @@
 #!/usr/bin/env python3
 """작업영역 점구름 + 조건수 컬러맵. (M3-2)
 
-    관절 한계 안에서 자세 샘플링 -> FK 로 손끝 위치 -> 각 점의 J -> 조건수 -> 색 -> PointCloud2
-
-도달 범위와 「위험한 자세」가 한 화면에 나온다. 링크 길이 합(상한 0.764 m)은 추정이지만
-이 구름의 경계는 관절 한계까지 반영한 실제 경계다.
-
-구름을 둘로 나눠 낸다. 이 둘이 다르다는 것이 설치 위치를 정할 때의 핵심이다.
-
-    ~/workspace/reachable  — 닿기만 하면 되는 영역 (자세 무관)
-    ~/workspace/oriented   — 정해둔 접근 방향으로 닿는 영역
-
-⚠ 이름에 주의. 교과서의 dexterous workspace 는 「모든 자세로 닿는 점의 집합」이고
-  6축 팔에서는 대개 텅 빈다. 여기서 내는 것은 그것이 아니라 「접근 방향 하나를 정해두고
-  그 방향(기본: 바닥을 향해, 허용각 25도)으로 닿는가」다. 작업이 정해지면 이쪽이
-  실제로 쓸 수 있는 공간이므로 강의에는 이것이 맞다.
-
-  판정식은 TCP 프레임의 z 축과 월드 -Z 의 각이다. link6 의 +z 는 손가락 쪽을 가리키므로
-  (URDF 로 확인: 내적 1.0000) 이 축이 곧 접근 방향이다. 축 둘레 회전(joint6)은 자유다.
-
-읽는 것은 URDF 하나뿐이다. numpy 말고는 아무것도 필요 없다.
-
+    관절 한계 안 샘플링 -> FK -> J -> 조건수 -> 색 -> PointCloud2
     ros2 launch piper_lecture_demo urdf_demos.launch.py workspace:=true
 
-URDF 스택에 얹혀 돈다. /joint_states 를 쓰지 않고 관절을 제 안에서 훑기 때문에
-자기 스택이 따로 필요 없다.
+구름을 둘로 낸다. 이 차이가 설치 위치를 정할 때의 핵심이다.
+
+    ~/workspace/reachable   닿기만 하면 되는 영역
+    ~/workspace/oriented    정해둔 접근 방향으로 닿는 영역
+
+판정식은 TCP 프레임 z 축과 월드 -Z 의 각 (기본 허용 25도). joint6 회전은 자유.
+
+⚠ 교과서의 dexterous workspace 가 아니다. 상세는 NOTES.md.
+읽는 것은 URDF 뿐. /joint_states 를 안 쓰므로 URDF 스택에 얹힌다. 계산 16 초.
 """
 
 import struct
@@ -75,13 +63,9 @@ class Workspace(Node):
         self.declare_parameter("base_link", "base_link")
         self.declare_parameter("tip_link", "link6")
         self.declare_parameter("frame_id", "base_link")
-        # 관절별 샘플 수. 1 이면 그 관절을 0 으로 고정한다.
-        # joint1 을 1 로 두면 수직 단면이 나와 강의용으로 훨씬 읽기 쉽다.
-        #
-        # ⚠ joint4 를 고정하면 접근 방향이 인위적으로 아래로 쏠려 「자세까지 맞는 영역」이
-        #   3배 넘게 부풀려진다. 반드시 샘플링할 것.
-        # ⚠ joint6 은 1 로 두어도 된다 — 자기 축 회전이라 TCP 위치도 접근 방향도
-        #   바꾸지 않는다. 샘플 수만 늘리고 결과는 같다.
+        # 관절별 샘플 수. 1 = 그 관절을 0 으로 고정. joint1 을 1 로 두면 수직 단면.
+        # ⚠ joint4 고정 금지 — 접근 방향이 아래로 쏠려 「자세까지 맞는 영역」이 3배 부푼다.
+        # ⚠ joint6 은 1 로 둬도 된다 — 자기 축 회전이라 TCP 위치·접근 방향을 안 바꾼다.
         self.declare_parameter("samples", [11, 13, 13, 5, 5, 1])
         # 색 범위: 조건수를 log10 으로 본다. 1 -> 0, 100 -> 2
         self.declare_parameter("cond_log_min", 0.0)

@@ -1,29 +1,17 @@
 #!/usr/bin/env python3
-"""manipulability 타원체와 sigma_min 을 rviz 에 그린다. (M1 · M3-3 · M3-4)
+"""manipulability 타원체 + sigma_min. (M1 · M3-3 · M3-4)
 
-슬라이더를 밀거나 프리셋을 재생하면 팔이 펴지면서 타원체가 납작해지고
-sigma_min 이 0 으로 간다. 특이점은 「타원체가 선분이 되는 극한」이다.
+    ros2 launch piper_lecture_demo urdf_demos.launch.py [preset:=elbow] [readout:=marker]
 
-⚠ 지표를 두 개 낸다. 이유가 있다.
+지표를 둘 낸다. 하나만 보면 놓친다.
 
-    선속도 (J 의 위 3행, 3xN)  -> 타원체. 손끝이 어느 방향으로 얼마나 빨리 가나
-    전체   (J 6xN)             -> sigma_min. 자세까지 포함한 6자유도
+    선속도 (J 위 3행)  -> 타원체
+    전체   (J 6xN)     -> sigma_min
 
-이 로봇에서는 둘이 갈리는 자리가 있다. joint5 = 0 인 손목 특이점에서는
-전체 sigma_min 이 0 인데 타원체는 여전히 둥글다 — 속도는 멀쩡한데 자세를
-바꿀 자유도가 죽은 것이다. 하나만 보면 놓친다.
+joint5 = 0 에서 sigma_min 은 0 인데 타원체는 둥글다.
 
-숫자는 기본적으로 **2D 숫자판**으로 낸다 — /manipulability_readout 토픽의 Image 를
-rviz 기본 Image 디스플레이가 받는다. rviz2 에는 화면 고정 오버레이 디스플레이가 없고
-(서드파티 플러그인을 따로 깔아야 한다) 3D 텍스트는 카메라를 당기면 작아지고 팔에 가린다.
-readout:=marker 로 하면 예전처럼 3D 텍스트를 쓴다.
-
-읽는 것은 URDF 하나뿐이다. MoveIt 도 KDL 도 쓰지 않는다 — 여기서 쓰는 Jacobian 은
-강의에서 다룬 zi x (pe - pi) 를 그대로 구현한 piper_lecture_demo.kinematics 의 것이다.
-
-    ros2 launch piper_lecture_demo urdf_demos.launch.py
-    ros2 launch piper_lecture_demo urdf_demos.launch.py preset:=elbow
-    ros2 launch piper_lecture_demo urdf_demos.launch.py readout:=marker
+숫자는 2D 숫자판(/manipulability_readout, Image). rviz2 에 HUD 가 없다.
+Jacobian 은 kinematics.py 것이다. 기본은 감추기 — 버튼으로 드러낸다.
 """
 
 import cv2
@@ -60,16 +48,10 @@ class Manipulability(Node):
         self.declare_parameter("frame_id", "base_link")
         self.declare_parameter("scale", 0.30)         # 타원체 크기 배율
         self.declare_parameter("report_period", 1.0)  # 터미널 출력 주기 [s], 0 이면 끔
-        # 기준점(TCP) — tip_link 프레임에서 잰 오프셋 [m].
-        # 기본값 0.1358 은 URDF 와 그리퍼 메시에서 구한 손끝 위치다. link7/link8 의
-        # STL 을 link6 좌표계로 옮기면 손가락이 z = 0.0593 ~ 0.1358 을 차지하고,
-        # 두 손가락 사이 파지 중심은 (0, 0, 0.1358) 이 된다.
-        # [0, 0, 0] 을 주면 플랜지(link6) 기준으로 되돌아간다.
+        # 기준점(TCP) — tip_link 프레임 오프셋 [m]. [0,0,0] 이면 플랜지 기준.
+        # 0.1358 은 URDF·그리퍼 메시에서 구한 파지 중심이고 link7 원점과 같다.
         self.declare_parameter("tcp_offset", [0.0, 0.0, 0.1358])
-        # 숫자를 어디에 표시할까.
-        #   image  — 2D 숫자판을 Image 로 발행한다 (rviz 기본 Image 디스플레이). 기본값
-        #   marker — 3D 텍스트 마커. 카메라에 따라 크기가 변하고 팔에 가린다
-        #   both / none
+        # 숫자 표시 — image(2D 숫자판, 기본) / marker(3D 텍스트) / both / none
         self.declare_parameter("readout", "image")
         # **기본은 감추기다.** 화면을 비운 채로 시작해 버튼으로 드러내는 것이
         # 이 패키지의 연출이다 (ik_solutions 의 해와 같다).
@@ -271,11 +253,8 @@ class Manipulability(Node):
         self.pub.publish(arr)
 
     # ------------------------------------------------------------ 숫자판 (2D)
-    #
-    # rviz2 에는 화면 고정 오버레이 디스플레이가 없다 (서드파티 플러그인을 깔아야 한다).
-    # 대신 숫자판을 이미지로 그려 보내면 기본 Image 디스플레이가 받아준다.
-    # 3D 텍스트와 달리 카메라를 움직여도 크기와 위치가 변하지 않고 팔에 가려지지도 않는다.
-    # 필요한 것은 numpy 와 opencv 뿐이고, cv_bridge 없이 Image 메시지를 직접 채운다.
+    # rviz2 에 화면 고정 오버레이가 없다. 이미지로 그려 보내면 기본 Image 디스플레이가
+    # 받고, 카메라를 움직여도 크기·위치가 안 변한다. numpy + opencv 만, cv_bridge 없이.
 
     def publish_readout(self):
         if not self.have_q or self.readout not in ("image", "both"):
@@ -326,7 +305,7 @@ class Manipulability(Node):
         text(f"6-DOF  sigma_min {sigma6[-1]:.5f}   cond {_fmt(cond6)}",
              16, 280, 0.55, (200, 200, 210), 1)
 
-        # 판정 기준은 이 로봇에서 실측한 값이다 (README 「특이점 판정 기준」 참조):
+        # 판정 기준은 이 로봇에서 실측한 값이다 (NOTES.md 「특이점 판정 기준」):
         #   cond_6d 400 자세 표본에서 KDL IK 성공률 —
         #   < 100 : 100 %   /   100 ~ 1000 : 98 %   /   > 1000 : 67 %
         if cond6 >= 1000.0:

@@ -1,44 +1,23 @@
 #!/usr/bin/env python3
-"""자세 드라이버 — 프리셋 자세를 /joint_states 로 내보낸다. (M3-3 · M3-4)
+"""자세 드라이버 — 프리셋을 /joint_states 로 내보낸다. (M3-3 · M3-4)
 
-URDF 런치에 항상 따라 뜬다. 자세를 바꾸는 것은 별도 노드다:
+**/joint_states 의 유일한 발행자다.** 슬라이더 GUI 는 /gui_joint_states 로 비켜
+발행하고 이 노드가 받아 넘긴다. 발행자가 둘이면 서로 덮어쓴다 (명령 토픽이다).
 
-    ros2 launch piper_lecture_demo urdf_demos.launch.py   <- 한 번만
-    ros2 run piper_lecture_demo goto_pose.py elbow                 <- 필요할 때마다
+    슬라이더 -> gui 모드 / goto_pose -> preset 모드 (보간)
 
-**이 노드가 /joint_states 의 유일한 발행자다.** 슬라이더 GUI 는 /gui_joint_states 로
-비켜 발행하고 이 노드가 그것을 받아 넘긴다. 발행자를 하나로 묶어두지 않으면 둘이
-서로 덮어써서 로봇과 타원체가 따로 논다 (이 레포에서 /joint_states 는 명령 토픽이다).
+GUI 에 source_list 로 /joint_states 를 물려 두어 프리셋 뒤에 슬라이더를 잡아도 안 튄다.
 
-동작 방식:
+근거는 이 레포 URDF 로 계산한 값이다 (기준점 TCP).
 
-    슬라이더를 밀면   -> gui 모드. GUI 값을 그대로 넘긴다
-    goto_pose 를 쓰면   -> preset 모드. 목표 자세까지 보간한다
-    보간이 끝난 뒤
-    슬라이더를 밀면   -> 다시 gui 모드로 돌아간다
-
-GUI 에는 source_list 로 /joint_states 를 물려 두었으므로 슬라이더가 프리셋 자세를
-따라온다. 그래서 프리셋 뒤에 슬라이더를 잡아도 팔이 튀지 않는다.
-
-프리셋의 근거는 이 레포의 URDF 로 직접 계산한 것이다 (계산식은 kinematics.py).
-괄호 안은 선속도 타원체의 조건수 / 전체 6자유도 sigma_min 이며, 기준점은 TCP 다.
-
-  good      잘 움직이는 자세                    (cond_v  2.8 / sigma_min_6d 0.104)
-  stretch   팔을 편다 — 타원체가 원반이 된다     (cond_v 10.5 / sigma_min_6d 0.0075)
-  elbow     joint3 = -2.85 + joint5 = 0
-            타원체가 사실상 선분이 된다          (cond_v 77.4 / sigma_min_6d 0.000050)
-  wrist     joint5 = 0 만                       (cond_v  3.2 / sigma_min_6d 0.000057)
-            ⚠ 타원체는 둥근데 6자유도는 죽어 있다. 속도는 멀쩡하고 자세를 못 바꾼다
-  home      모든 관절 0                         (cond_v  7.8 / sigma_min_6d 0.000061)
-            ⚠ 이 로봇의 영자세가 곧 손목 특이점이다
-  shoulder  손목 중심이 joint1 축 위            (cond_v  5.1 / sigma_min_6d 0.000076)
-  slow      전체가 느린 자세                    (cond_v  6.5 / sigma_min_6d 0.0238)
-            ⚠ elbow 와 w 가 거의 같다 (0.0085 vs 0.0084) 는데 특이점이 아니다.
-              w 는 부피라 「한 축이 죽는 것」과 「전체가 작은 것」을 구분하지 못한다
-
-joint5 = 0 은 z4 와 z6 를 평행하게 만들고(|z4·z6| = 1.0000), 나머지 관절값과 무관하게
-6자유도 sigma_min 을 0 으로 만든다. joint3 = -2.831 rad(-162.2도) 도 같은 성질이다.
-둘 다 400개 무작위 자세로 확인했다.
+    preset    cond_v  sigma_min_6d
+    good         2.8      0.104     잘 움직인다
+    stretch     10.5      0.0075    팔을 편다 — 원반
+    elbow       77.4      0.000050  joint3=-2.85 + joint5=0 — 선분
+    wrist        3.2      0.000057  ⚠ 둥근데 6자유도가 죽었다
+    home         7.8      0.000061  ⚠ 영자세가 곧 손목 특이점
+    shoulder     5.1      0.000076  손목 중심이 joint1 축 위
+    slow         6.5      0.0238    ⚠ elbow 와 w 가 같은데 특이점이 아니다
 
 ⚠ 실물을 연결하지 않은 상태로 쓸 것.
 """

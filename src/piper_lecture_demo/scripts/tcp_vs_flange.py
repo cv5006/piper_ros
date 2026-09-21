@@ -1,23 +1,15 @@
 #!/usr/bin/env python3
 """MoveIt 이 맞추는 것은 link6 이지 손끝이 아니다. (§12.3)
 
-rviz 에서 볼 수 없는 것이 이것 하나다. MotionPlanning 의 목표 마커는 link6 에 붙어
-있는데 화면에는 그렇게 안 쓰여 있고, 손끝은 그보다 더 나가 있다. 첫 픽앤플레이스가
-빗나가는 자리다.
-
-이 노드는 두 점을 찍고 그 사이 거리를 숫자로 낸다.
-
-    빨강  link6 원점   — MoveIt 이 목표 자세에 맞추는 자리
-    파랑  손끝(TCP)    — 실제로 물건에 닿는 자리
-
-읽는 것은 TF 뿐이다. MoveIt 도 URDF 파싱도 필요 없어서 MoveIt 스택 위에서도,
-URDF 스택 위에서도 그대로 돈다.
-
     ros2 run piper_lecture_demo tcp_vs_flange.py
 
-손끝 자리는 link7(손가락) 프레임에서 가져온다. 없으면 tip_link 에서 z 로
-tcp_offset 만큼 나간 점을 쓴다 — 기본값 0.1358 m 는 URDF 와 그리퍼 메시에서 구한
-값이고 마침 link7 원점과 같다.
+    빨강  link6 원점   MoveIt 이 목표에 맞추는 자리
+    파랑  손끝(TCP)    실제로 물건에 닿는 자리
+
+**rviz 에서 볼 수 없는 것이 이것 하나다.** 목표 마커는 link6 에 붙어 있는데 화면에
+그렇게 안 쓰여 있다. 첫 픽앤플레이스가 빗나가는 자리다.
+
+읽는 것은 TF 뿐이라 두 스택 어디서나 돈다. 손끝은 link7 프레임, 없으면 tcp_offset.
 """
 
 import numpy as np

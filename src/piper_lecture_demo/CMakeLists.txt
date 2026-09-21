@@ -55,7 +55,7 @@ ament_python_install_package(${PROJECT_NAME})
 install(DIRECTORY launch config
   DESTINATION share/${PROJECT_NAME})
 
-install(FILES README.md
+install(FILES README.md NOTES.md
   DESTINATION share/${PROJECT_NAME})
 
 ament_package()

@@ -1,24 +1,16 @@
 #!/usr/bin/env python3
-"""piper 드라이버의 **토픽 인터페이스만** 흉내 내는 대역. 실물 없이 어댑터를 시험한다.
+"""piper 드라이버의 **토픽 인터페이스만** 흉내 낸다. 실물 없이 어댑터를 시험한다.
 
     ros2 run piper_lecture_demo piper_driver_stub.py
 
-진짜 드라이버(piper_ctrl_single_node.py)와 같은 자리에 선다.
+    구독   joint_ctrl_single      목표 자세 하나
+    발행   joint_states_feedback  joint1..joint6 + 'gripper'
+    서비스 enable_srv
 
-    구독  joint_ctrl_single       (JointState)  목표 자세 하나
-    발행  joint_states_feedback   (JointState)  이름은 joint1..joint6 + 'gripper'
-    서비스 enable_srv             (piper_msgs/Enable)
+⚠ 확인되는 것 — 궤적 분해 · 속도 필드 · 이름 변환 · 되먹임 루프 부재 · Plan & Execute
+⚠ 확인 안 되는 것 — CAN 타이밍 · 추종 오차 · 관절 한계 거동 · 그리퍼 힘
 
-⚠ **이것으로 확인되는 것과 안 되는 것을 구분할 것.**
-
-  확인된다   어댑터가 궤적을 제대로 풀어 쏘는가 · 속도 필드를 채우는가 ·
-             이름을 joint7/joint8 로 바꿔 내는가 · 되먹임 루프가 없는가 ·
-             MoveIt 의 Plan & Execute 가 끝까지 도는가
-  확인 안 된다 CAN 타이밍 · 실제 추종 오차 · 관절 한계에서의 거동 · 그리퍼 힘
-
-팔은 1차 지연으로 목표를 따라간다 (실제 서보가 아니라 그저 「따라가는 시늉」이다).
-드라이버가 하는 단위 변환·검사는 흉내 내지 않는다 — 어댑터가 rad 로 보내고
-rad 로 되받는 부분만 같게 맞춘다.
+팔은 1차 지연으로 따라가는 시늉만 한다.
 """
 
 import rclpy
