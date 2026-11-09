@@ -37,6 +37,9 @@ source ~/.bashrc
 
 ## 3 moveit으로 실제 로봇팔 제어
 
+> 기본 사용법 C++ 예제 · 실물 어댑터 연결: [`piper_moveit_examples`](../piper_moveit_examples/README.md)
+> - 아래 방식: 실물 상태 피드백 · 속도 제한 없음 (차이는 해당 README §3)
+
 ### 3.1 piper_ros 실행
 
 [piper_ros](../../README.MD#1-안내-방법) 설정을 완료한 후

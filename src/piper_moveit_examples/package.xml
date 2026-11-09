@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>piper_moveit_examples</name>
+  <version>0.1.0</version>
+  <description>Piper + MoveIt 2 기본 사용법 C++ 예제 (모델 · 충돌 물체 · 계획 · 실행)</description>
+  <maintainer email="hwiwon@hanwha.com">hwiwon</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>moveit_core</depend>
+  <depend>moveit_ros_planning_interface</depend>
+  <depend>moveit_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>shape_msgs</depend>
+  <depend>tf2_eigen</depend>
+
+  <!-- 스택: piper 의 MoveIt 설정 + 실물 어댑터(piper_lecture_demo) -->
+  <exec_depend>piper_with_gripper_moveit</exec_depend>
+  <exec_depend>piper_lecture_demo</exec_depend>
+  <exec_depend>moveit_configs_utils</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
